@@ -12,7 +12,6 @@ function getKey() {
   return crypto.createHash('sha256').update(String(raw)).digest();
 }
 
-// AES-256-GCM：存储 base64( iv[12] + tag[16] + ciphertext )
 export function encrypt(plain) {
   const key = getKey();
   const iv = crypto.randomBytes(12);
@@ -31,17 +30,24 @@ export function decrypt(blob) {
   return Buffer.concat([d.update(enc), d.final()]).toString('utf8');
 }
 
-// 确定性指纹：同一个 Key 永远同一 hash，用于唯一/去重，不暴露明文
 export function hashKey(plain) {
   return crypto.createHmac('sha256', getKey()).update(String(plain)).digest('hex');
 }
 
 export function normEmail(e) { return String(e || '').trim().toLowerCase(); }
 
-// 恒定时间比较管理员令牌
+// 每个 Key 最多发给多少个选手（默认 10），可用环境变量覆盖
+export function maxPerKey() {
+  return parseInt(process.env.MAX_PER_KEY || '10', 10);
+}
+
+// 管理员口令：默认 071926z.ai，可用环境变量 ADMIN_TOKEN 覆盖
+function adminToken() {
+  return process.env.ADMIN_TOKEN || '071926z.ai';
+}
+
 export function checkAdmin(token) {
-  const expected = process.env.ADMIN_TOKEN || '';
-  if (!expected) return false;
+  const expected = adminToken();
   const a = Buffer.from(String(token || '')), b = Buffer.from(expected);
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);

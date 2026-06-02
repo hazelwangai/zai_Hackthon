@@ -100,7 +100,7 @@
     </form>
 
     <section class="results" id="results" hidden></section>
-    <p class="foot">每个邮箱仅对应一个专属 Key · One key per participant</p>
+    <p class="foot">输入报名邮箱即可领取 · One key per email</p>
   </main>
 
 <script>
@@ -125,7 +125,7 @@ function showKey(key,isNew){
     (isNew?'<span class="badge">新领取</span>':'<span class="badge">你已领取</span>')+'</div>'+
     '<div class="keyrow"><span class="keyval">'+esc(key)+'</span>'+
     '<button class="copy" data-key="'+encodeURIComponent(key)+'">复制 / Copy</button></div>'+
-    '<div class="hint">这是你的专属 Key，请妥善保存，仅你本人可用。同一邮箱再次查询会得到同一个 Key。</div></div>';
+    '<div class="hint">请妥善保存你的 Key。同一邮箱再次查询会返回同一个 Key。</div></div>';
 }
 
 form.addEventListener('submit',async e=>{
