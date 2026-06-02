@@ -1,0 +1,4 @@
+[
+  { "api_key": "示例-请替换为真实Key", "source_email": "zai账号@example.com" },
+  { "api_key": "another-key", "source_email": "zai账号2@example.com" }
+]

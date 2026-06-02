@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get your API Key</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23243a66' stroke-width='2'><circle cx='8' cy='15' r='4'/><path d='M10.85 12.15 19 4M18 5l2 2M15 8l2 2'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1f3052;--ink-deep:#16233f;--muted:#6b7896;--line:#dfe4ee;
+    --field:#fff;--accent:#243a66;--accent-press:#1b2e54;--ok:#1f8a52;--err:#c0392b;
+    --display:"Sora","PingFang SC","Microsoft YaHei",-apple-system,sans-serif;
+    --body:"Manrope","PingFang SC","Microsoft YaHei",-apple-system,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+  body{font-family:var(--body);color:var(--ink);min-height:100vh;display:flex;
+    align-items:center;justify-content:center;padding:32px 18px;position:relative;
+    overflow-x:hidden;background:#dbe6f2;}
+  body::before{content:"";position:fixed;inset:0;z-index:-2;
+    background:radial-gradient(120% 80% at 12% 8%,#f6ead7 0%,rgba(246,234,215,0) 45%),
+      radial-gradient(90% 70% at 88% 4%,#f1dec3 0%,rgba(241,222,195,0) 40%),
+      radial-gradient(140% 120% at 20% 70%,#9ec4e6 0%,rgba(158,196,230,0) 55%),
+      radial-gradient(120% 120% at 85% 90%,#3f6ea8 0%,rgba(63,110,168,0) 50%),
+      linear-gradient(160deg,#eaf1f8 0%,#cfe0f0 55%,#aecbe8 100%);}
+  body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.04;pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+  .card{width:100%;max-width:760px;background:rgba(255,255,255,.62);
+    backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
+    border:1px solid rgba(255,255,255,.7);border-radius:24px;
+    box-shadow:0 30px 80px -28px rgba(31,48,82,.4),inset 0 1px 0 rgba(255,255,255,.6);
+    padding:46px 48px 38px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:-.5px;color:var(--ink-deep);}
+  .sub{color:var(--muted);font-size:15px;margin-top:8px}
+  .steps{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+  .step{flex:1;min-width:140px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);
+    border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+  .step .n{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--display)}
+  .step .t{font-size:13px;line-height:1.45;color:var(--ink)}
+  form{margin-top:26px}
+  .field{position:relative;background:var(--field);border:1px solid var(--line);
+    border-radius:16px;padding:16px 56px 16px 20px;transition:border-color .2s,box-shadow .2s;}
+  .field:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(36,58,102,.12);}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+  .field input{width:100%;border:0;outline:0;background:transparent;font-family:var(--body);
+    font-size:17px;color:var(--ink-deep);}
+  .field input::placeholder{color:#aeb6c9}
+  .field .deco{position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#c2cad9;font-size:18px;user-select:none;}
+  .btn{width:100%;margin-top:22px;background:var(--accent);color:#fff;border:0;border-radius:16px;
+    padding:17px;font-family:var(--body);font-weight:600;font-size:16px;cursor:pointer;letter-spacing:.3px;
+    display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .05s;}
+  .btn:hover{background:var(--accent-press)}.btn:active{transform:scale(.99)}.btn svg{width:17px;height:17px}
+  .btn[disabled]{opacity:.7;cursor:not-allowed}
+  .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
+    border-radius:50%;animation:sp .7s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+  .results{margin-top:28px}
+  .acct{background:rgba(255,255,255,.78);border:1px solid rgba(223,228,238,.9);
+    border-radius:16px;padding:24px 22px;animation:rise .35s ease both;}
+  .label{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px}
+  .keyrow{display:flex;align-items:center;gap:12px}
+  .keyval{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:16px;color:var(--ink-deep);background:#f1f4f9;border:1px solid #e4e9f1;
+    border-radius:10px;padding:12px 14px;word-break:break-all;}
+  .copy{flex:0 0 auto;border:1px solid var(--accent);background:transparent;color:var(--accent);
+    border-radius:10px;padding:12px 18px;font-weight:600;font-size:14px;cursor:pointer;
+    font-family:var(--body);transition:all .15s;white-space:nowrap;}
+  .copy:hover{background:var(--accent);color:#fff}.copy.done{background:var(--ok);border-color:var(--ok);color:#fff}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:14px}
+  .badge{display:inline-block;font-size:11px;font-weight:600;color:#2a4a8a;background:#e7eefb;
+    border:1px solid #d3e0f7;border-radius:999px;padding:2px 10px;margin-left:8px}
+  .empty{text-align:center;color:var(--err);font-size:14px;padding:18px;}
+  .foot{text-align:center;color:#9aa4ba;font-size:12px;margin-top:22px}
+  @media(max-width:560px){.card{padding:34px 22px 30px}h1{font-size:27px}
+    .keyrow{flex-wrap:wrap}.copy{width:100%}.step{min-width:100%}}
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>Get your API Key</h1>
+    <p class="sub">Enter your registered email to claim your trial key</p>
+
+    <div class="steps">
+      <div class="step"><span class="n">1</span><span class="t">输入报名邮箱<br>Enter your email</span></div>
+      <div class="step"><span class="n">2</span><span class="t">点击领取<br>Click to claim</span></div>
+      <div class="step"><span class="n">3</span><span class="t">复制并保存 Key<br>Copy &amp; save</span></div>
+    </div>
+
+    <form id="form" autocomplete="off">
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@example.com" inputmode="email" required />
+        <span class="deco">A&#8801;</span>
+      </div>
+      <button class="btn" id="submit" type="submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span id="btnText">领取 / Claim Key</span>
+      </button>
+    </form>
+
+    <section class="results" id="results" hidden></section>
+    <p class="foot">每个邮箱仅对应一个专属 Key · One key per participant</p>
+  </main>
+
+<script>
+const form=document.getElementById('form');
+const results=document.getElementById('results');
+const btn=document.getElementById('submit');
+const btnText=document.getElementById('btnText');
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function loading(on){
+  btn.disabled=on;
+  btnText.innerHTML = on ? '<span class="spin" style="display:inline-block;vertical-align:-2px"></span> 处理中…' : '领取 / Claim Key';
+}
+function showError(msg){
+  results.hidden=false;
+  results.innerHTML='<div class="empty">'+esc(msg)+'</div>';
+}
+function showKey(key,isNew){
+  results.hidden=false;
+  results.innerHTML=
+    '<div class="acct"><div class="label">Your API Key'+
+    (isNew?'<span class="badge">新领取</span>':'<span class="badge">你已领取</span>')+'</div>'+
+    '<div class="keyrow"><span class="keyval">'+esc(key)+'</span>'+
+    '<button class="copy" data-key="'+encodeURIComponent(key)+'">复制 / Copy</button></div>'+
+    '<div class="hint">这是你的专属 Key，请妥善保存，仅你本人可用。同一邮箱再次查询会得到同一个 Key。</div></div>';
+}
+
+form.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=document.getElementById('email').value.trim();
+  if(!email){showError('请输入邮箱');return;}
+  loading(true);
+  try{
+    const r=await fetch('/api/claim',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email})
+    });
+    const data=await r.json();
+    if(!r.ok){
+      showError(data.message || '领取失败，请稍后再试');
+    }else{
+      showKey(data.key, data.status==='new');
+    }
+  }catch(err){
+    showError('网络异常，请检查连接后重试');
+  }finally{
+    loading(false);
+  }
+});
+
+results.addEventListener('click',async e=>{
+  const b=e.target.closest('.copy'); if(!b) return;
+  const text=decodeURIComponent(b.dataset.key);
+  try{
+    if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);}
+    else{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';
+      ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+      document.execCommand('copy');document.body.removeChild(ta);}
+    const old=b.textContent;b.textContent='已复制 ✓';b.classList.add('done');
+    setTimeout(()=>{b.textContent=old;b.classList.remove('done');},1600);
+  }catch(_){b.textContent='复制失败';}
+});
+</script>
+</body>
+</html>

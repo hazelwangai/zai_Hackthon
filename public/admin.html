@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · API Key 管理后台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23243a66' stroke-width='2'><path d='M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5z'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1f3052;--ink-deep:#16233f;--muted:#6b7896;--line:#e3e8f0;--bg:#f4f6fb;
+    --accent:#243a66;--accent-press:#1b2e54;--ok:#1f8a52;--ok-bg:#e8f6ee;--warn:#b8860b;
+    --warn-bg:#fff6e0;--err:#c0392b;--err-bg:#fdecea;
+    --display:"Sora","PingFang SC","Microsoft YaHei",sans-serif;
+    --body:"Manrope","PingFang SC","Microsoft YaHei",sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);min-height:100vh}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 22px 60px}
+
+  /* login */
+  .login{max-width:380px;margin:14vh auto 0;background:#fff;border:1px solid var(--line);
+    border-radius:18px;padding:34px;box-shadow:0 20px 50px -30px rgba(31,48,82,.5)}
+  .login h1{font-family:var(--display);font-size:22px;color:var(--ink-deep);margin-bottom:6px}
+  .login p{color:var(--muted);font-size:13px;margin-bottom:20px}
+  input,select{font-family:var(--body);font-size:14px;color:var(--ink-deep);
+    border:1px solid var(--line);border-radius:10px;padding:11px 13px;width:100%;outline:none;background:#fff}
+  input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,58,102,.1)}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:11px 18px;
+    font-family:var(--body);font-weight:600;font-size:14px;cursor:pointer;transition:background .15s}
+  .btn:hover{background:var(--accent-press)}.btn[disabled]{opacity:.6;cursor:not-allowed}
+  .btn.sm{padding:6px 11px;font-size:12.5px;border-radius:8px}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  .btn.ghost:hover{background:var(--accent);color:#fff}
+  .btn.danger{background:transparent;color:var(--err);border:1px solid #e7b4ae}
+  .btn.danger:hover{background:var(--err);color:#fff}
+  .err{color:var(--err);font-size:13px;margin-top:10px;min-height:18px}
+
+  /* dashboard */
+  header.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px}
+  header.bar h1{font-family:var(--display);font-size:22px;color:var(--ink-deep)}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;min-width:120px}
+  .stat .k{font-size:12px;color:var(--muted);font-weight:600}
+  .stat .v{font-size:26px;font-weight:700;color:var(--ink-deep);font-family:var(--display);margin-top:2px}
+  .stat.rem .v{color:var(--accent)}
+  .alert{border-radius:12px;padding:12px 16px;font-size:14px;font-weight:600;margin-bottom:16px;display:none}
+  .alert.low{display:block;background:var(--warn-bg);color:var(--warn);border:1px solid #f0d795}
+  .alert.empty{display:block;background:var(--err-bg);color:var(--err);border:1px solid #f0b4ae}
+
+  .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+  .panel h2{font-size:14px;color:var(--ink);margin-bottom:12px;font-weight:600}
+  .addrow{display:flex;gap:10px;flex-wrap:wrap}
+  .addrow input{flex:1;min-width:200px}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+  .toolbar .right{display:flex;align-items:center;gap:10px}
+  .live{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(31,138,82,.5);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(31,138,82,.5)}70%{box-shadow:0 0 0 6px rgba(31,138,82,0)}100%{box-shadow:0 0 0 0 rgba(31,138,82,0)}}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:12px;color:var(--muted);font-weight:600;background:#fafbfe;position:sticky;top:0}
+  td.key{font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all;max-width:280px}
+  .pill{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px}
+  .pill.assigned{color:var(--ok);background:var(--ok-bg)}
+  .pill.unassigned{color:var(--muted);background:#eef1f6}
+  tr.flash{animation:flash 1.6s ease}
+  @keyframes flash{0%{background:#fff8d8}100%{background:transparent}}
+  .acts{display:flex;gap:6px;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  .hidden{display:none}
+  @media(max-width:640px){.tablewrap{overflow-x:auto}table{min-width:680px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 登录 -->
+  <div id="login" class="login">
+    <h1>管理后台</h1>
+    <p>请输入管理员口令</p>
+    <input id="pwd" type="password" placeholder="管理员口令" />
+    <div class="err" id="loginErr"></div>
+    <button class="btn" id="loginBtn" style="width:100%;margin-top:8px">登录</button>
+  </div>
+
+  <!-- 后台 -->
+  <div id="dash" class="hidden">
+    <header class="bar">
+      <h1>API Key 管理后台</h1>
+      <button class="btn ghost sm" id="logout">退出登录</button>
+    </header>
+
+    <div class="alert" id="alert"></div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">总数</div><div class="v" id="sTotal">–</div></div>
+      <div class="stat"><div class="k">已发放</div><div class="v" id="sClaimed">–</div></div>
+      <div class="stat rem"><div class="k">剩余可领</div><div class="v" id="sRemain">–</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>新增 API Key</h2>
+      <div class="addrow">
+        <input id="newKey" placeholder="API Key（必填）" />
+        <input id="newSrc" placeholder="来源 Zai 邮箱（选填）" />
+        <button class="btn" id="addBtn">添加</button>
+      </div>
+      <div class="err" id="addErr"></div>
+    </div>
+
+    <div class="panel">
+      <div class="toolbar">
+        <div class="right">
+          <select id="filter" style="width:auto">
+            <option value="all">全部</option>
+            <option value="unassigned">未发放</option>
+            <option value="assigned">已发放</option>
+          </select>
+          <button class="btn ghost sm" id="refresh">手动刷新</button>
+        </div>
+        <div class="live"><span class="dot"></span> 实时刷新中（每 4 秒）</div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>API Key</th><th>来源 Zai 邮箱</th><th>发放状态</th>
+            <th>领取选手</th><th>领取时间</th><th>操作</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let TOKEN = sessionStorage.getItem('adm') || '';
+let timer = null;
+let prevStatus = {}; // id -> status，用于高亮变化
+
+function authHeaders(){ return { 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN }; }
+
+async function api(pathname, opts={}){
+  const r = await fetch(pathname, { ...opts, headers:{ ...authHeaders(), ...(opts.headers||{}) } });
+  if (r.status === 401){ logout(); throw new Error('未授权'); }
+  return r;
+}
+
+/* 登录 */
+$('loginBtn').onclick = async () => {
+  const pwd = $('pwd').value;
+  $('loginErr').textContent='';
+  $('loginBtn').disabled=true;
+  try{
+    const r = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})});
+    if(!r.ok){ $('loginErr').textContent='口令错误'; return; }
+    TOKEN = pwd; sessionStorage.setItem('adm', pwd);
+    enterDash();
+  }catch(e){ $('loginErr').textContent='登录失败，请重试'; }
+  finally{ $('loginBtn').disabled=false; }
+};
+$('pwd').addEventListener('keydown',e=>{ if(e.key==='Enter') $('loginBtn').click(); });
+
+function logout(){
+  sessionStorage.removeItem('adm'); TOKEN='';
+  if(timer) clearInterval(timer);
+  $('dash').classList.add('hidden'); $('login').classList.remove('hidden');
+}
+$('logout').onclick = logout;
+
+function enterDash(){
+  $('login').classList.add('hidden'); $('dash').classList.remove('hidden');
+  load();
+  if(timer) clearInterval(timer);
+  timer = setInterval(load, 4000);
+}
+
+/* 渲染 */
+function fmtTime(t){ if(!t) return '<span class="muted">—</span>'; const d=new Date(t);
+  return d.toLocaleString('zh-CN',{hour12:false}); }
+
+function renderStats(s){
+  $('sTotal').textContent=s.total; $('sClaimed').textContent=s.claimed; $('sRemain').textContent=s.remaining;
+  const a=$('alert'); a.className='alert';
+  if(s.empty){ a.classList.add('empty'); a.textContent='⚠️ API Key 已全部发完（剩余 0），请尽快补充。'; }
+  else if(s.low){ a.classList.add('low'); a.textContent='⚠️ API Key 仅剩 '+s.remaining+' 个（阈值 '+s.threshold+'），请准备补充。'; }
+}
+
+function renderTable(keys){
+  const tb=$('tbody'); tb.innerHTML='';
+  for(const k of keys){
+    const tr=document.createElement('tr');
+    const changed = prevStatus[k.id] && prevStatus[k.id] !== k.status;
+    if(changed) tr.className='flash';
+    tr.innerHTML =
+      '<td>'+k.id+'</td>'+
+      '<td class="key">'+esc(k.api_key)+'</td>'+
+      '<td>'+(k.source_email?esc(k.source_email):'<span class="muted">—</span>')+'</td>'+
+      '<td><span class="pill '+k.status+'">'+(k.status==='assigned'?'已发放':'未发放')+'</span></td>'+
+      '<td>'+(k.assigned_email?esc(k.assigned_email):'<span class="muted">—</span>')+'</td>'+
+      '<td>'+fmtTime(k.assigned_at)+'</td>'+
+      '<td><div class="acts">'+
+        '<button class="btn ghost sm" data-act="edit" data-id="'+k.id+'">改</button>'+
+        (k.status==='assigned'?'<button class="btn ghost sm" data-act="release" data-id="'+k.id+'">回收</button>':'')+
+        '<button class="btn danger sm" data-act="del" data-id="'+k.id+'">删</button>'+
+      '</div></td>';
+    tb.appendChild(tr);
+    prevStatus[k.id]=k.status;
+  }
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+async function load(){
+  try{
+    const r = await api('/api/admin/keys?status='+encodeURIComponent($('filter').value));
+    const data = await r.json();
+    renderStats(data.stats);
+    renderTable(data.keys);
+  }catch(e){ /* 401 已处理 */ }
+}
+$('filter').onchange = load;
+$('refresh').onclick = load;
+
+/* 新增 */
+$('addBtn').onclick = async () => {
+  const api_key=$('newKey').value.trim(); const source_email=$('newSrc').value.trim();
+  $('addErr').textContent='';
+  if(!api_key){ $('addErr').textContent='API Key 不能为空'; return; }
+  $('addBtn').disabled=true;
+  try{
+    const r=await api('/api/admin/keys',{method:'POST',body:JSON.stringify({api_key,source_email})});
+    const d=await r.json();
+    if(!r.ok){ $('addErr').textContent=d.message||'添加失败'; }
+    else{ $('newKey').value=''; $('newSrc').value=''; load(); }
+  }catch(e){ $('addErr').textContent='添加失败'; }
+  finally{ $('addBtn').disabled=false; }
+};
+
+/* 行内操作 */
+$('tbody').addEventListener('click', async (e)=>{
+  const btn=e.target.closest('button[data-act]'); if(!btn) return;
+  const id=btn.dataset.id, act=btn.dataset.act;
+  if(act==='edit'){
+    const nk=prompt('新的 API Key（留空=不改）：'); if(nk===null) return;
+    const ns=prompt('新的来源 Zai 邮箱（留空=清空该字段）：'); if(ns===null) return;
+    const body={}; if(nk.trim()) body.api_key=nk.trim(); body.source_email=ns.trim();
+    const r=await api('/api/admin/keys/'+id,{method:'PATCH',body:JSON.stringify(body)});
+    if(!r.ok){ const d=await r.json(); alert(d.message||'修改失败'); } load();
+  }else if(act==='release'){
+    if(!confirm('回收后该 Key 变为「未发放」，可再次被领取。确定？')) return;
+    await api('/api/admin/keys/'+id+'/release',{method:'POST'}); load();
+  }else if(act==='del'){
+    if(!confirm('确定删除该 Key？不可恢复。')) return;
+    await api('/api/admin/keys/'+id,{method:'DELETE'}); load();
+  }
+});
+
+/* 自动进入 */
+if(TOKEN){ enterDash(); }
+</script>
+</body>
+</html>

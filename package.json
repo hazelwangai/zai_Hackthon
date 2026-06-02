@@ -1,0 +1,15 @@
+{
+  "name": "apikey-dispenser",
+  "version": "1.0.0",
+  "description": "Self-service API Key dispenser: one unique key per participant email, atomic claim, AES-encrypted at rest.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "init-db": "node seed.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  },
+  "engines": { "node": ">=18" }
+}
