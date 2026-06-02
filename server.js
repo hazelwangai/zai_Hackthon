@@ -10,6 +10,9 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 让文档里的无扩展名地址 /admin 也能打开后台
+app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function ensureSchema() {
@@ -73,9 +76,10 @@ app.post('/api/claim', async (req, res) => {
 
     const keyRow = pick.rows[0];
     const newCount = keyRow.claim_count + 1;
+    const isFull = newCount >= cap;
     await client.query(
-      `UPDATE api_keys SET claim_count = $1, is_full = ($1 >= $2) WHERE id = $3`,
-      [newCount, cap, keyRow.id]
+      `UPDATE api_keys SET claim_count = $1, is_full = $2 WHERE id = $3`,
+      [newCount, isFull, keyRow.id]
     );
     await client.query(
       `INSERT INTO claims (email, key_id) VALUES ($1, $2)`,
