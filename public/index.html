@@ -4,166 +4,239 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Get your API Key</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23243a66' stroke-width='2'><circle cx='8' cy='15' r='4'/><path d='M10.85 12.15 19 4M18 5l2 2M15 8l2 2'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a0a' stroke-width='2'><circle cx='8' cy='15' r='4'/><path d='M10.85 12.15 19 4M18 5l2 2M15 8l2 2'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--ink:#1f3052;--ink-deep:#16233f;--muted:#6b7896;--line:#dfe4ee;
-    --field:#fff;--accent:#243a66;--accent-press:#1b2e54;--ok:#1f8a52;--err:#c0392b;
-    --display:"Sora","PingFang SC","Microsoft YaHei",-apple-system,sans-serif;
-    --body:"Manrope","PingFang SC","Microsoft YaHei",-apple-system,sans-serif;}
-  *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
-  body{font-family:var(--body);color:var(--ink);min-height:100vh;display:flex;
-    align-items:center;justify-content:center;padding:32px 18px;position:relative;
-    overflow-x:hidden;background:#dbe6f2;}
-  body::before{content:"";position:fixed;inset:0;z-index:-2;
-    background:radial-gradient(120% 80% at 12% 8%,#f6ead7 0%,rgba(246,234,215,0) 45%),
-      radial-gradient(90% 70% at 88% 4%,#f1dec3 0%,rgba(241,222,195,0) 40%),
-      radial-gradient(140% 120% at 20% 70%,#9ec4e6 0%,rgba(158,196,230,0) 55%),
-      radial-gradient(120% 120% at 85% 90%,#3f6ea8 0%,rgba(63,110,168,0) 50%),
-      linear-gradient(160deg,#eaf1f8 0%,#cfe0f0 55%,#aecbe8 100%);}
-  body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.04;pointer-events:none;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
-  .card{width:100%;max-width:760px;background:rgba(255,255,255,.62);
-    backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
-    border:1px solid rgba(255,255,255,.7);border-radius:24px;
-    box-shadow:0 30px 80px -28px rgba(31,48,82,.4),inset 0 1px 0 rgba(255,255,255,.6);
-    padding:46px 48px 38px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both;}
-  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-  h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:-.5px;color:var(--ink-deep);}
-  .sub{color:var(--muted);font-size:15px;margin-top:8px}
-  .steps{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
-  .step{flex:1;min-width:140px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);
-    border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
-  .step .n{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;
-    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--display)}
-  .step .t{font-size:13px;line-height:1.45;color:var(--ink)}
-  form{margin-top:26px}
-  .field{position:relative;background:var(--field);border:1px solid var(--line);
-    border-radius:16px;padding:16px 56px 16px 20px;transition:border-color .2s,box-shadow .2s;}
-  .field:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(36,58,102,.12);}
-  .field label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;}
-  .field input{width:100%;border:0;outline:0;background:transparent;font-family:var(--body);
-    font-size:17px;color:var(--ink-deep);}
-  .field input::placeholder{color:#aeb6c9}
-  .field .deco{position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#c2cad9;font-size:18px;user-select:none;}
-  .btn{width:100%;margin-top:22px;background:var(--accent);color:#fff;border:0;border-radius:16px;
-    padding:17px;font-family:var(--body);font-weight:600;font-size:16px;cursor:pointer;letter-spacing:.3px;
-    display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .05s;}
-  .btn:hover{background:var(--accent-press)}.btn:active{transform:scale(.99)}.btn svg{width:17px;height:17px}
-  .btn[disabled]{opacity:.7;cursor:not-allowed}
-  .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
-    border-radius:50%;animation:sp .7s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
-  .results{margin-top:28px}
-  .acct{background:rgba(255,255,255,.78);border:1px solid rgba(223,228,238,.9);
-    border-radius:16px;padding:24px 22px;animation:rise .35s ease both;}
-  .label{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px}
-  .keyrow{display:flex;align-items:center;gap:12px}
-  .keyval{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-    font-size:16px;color:var(--ink-deep);background:#f1f4f9;border:1px solid #e4e9f1;
-    border-radius:10px;padding:12px 14px;word-break:break-all;}
-  .copy{flex:0 0 auto;border:1px solid var(--accent);background:transparent;color:var(--accent);
-    border-radius:10px;padding:12px 18px;font-weight:600;font-size:14px;cursor:pointer;
-    font-family:var(--body);transition:all .15s;white-space:nowrap;}
-  .copy:hover{background:var(--accent);color:#fff}.copy.done{background:var(--ok);border-color:var(--ok);color:#fff}
-  .hint{font-size:12.5px;color:var(--muted);margin-top:14px}
-  .badge{display:inline-block;font-size:11px;font-weight:600;color:#2a4a8a;background:#e7eefb;
-    border:1px solid #d3e0f7;border-radius:999px;padding:2px 10px;margin-left:8px}
-  .empty{text-align:center;color:var(--err);font-size:14px;padding:18px;}
-  .foot{text-align:center;color:#9aa4ba;font-size:12px;margin-top:22px}
-  @media(max-width:560px){.card{padding:34px 22px 30px}h1{font-size:27px}
-    .keyrow{flex-wrap:wrap}.copy{width:100%}.step{min-width:100%}}
+  :root{
+    --bg:#ffffff; --ink:#0a0a0a; --ink2:#404040; --ink3:#8a8a8a;
+    --line:#e6e6e6; --line2:#d0d0d0; --err:#b3261e;
+    --sans:"Geist","Inter",system-ui,-apple-system,"Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);color:var(--ink);background:var(--bg);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 18px;
+    -webkit-font-smoothing:antialiased;position:relative;
+    background-image:radial-gradient(var(--line) 1px, transparent 1px);
+    background-size:22px 22px;
+  }
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(circle at 50% 45%, rgba(255,255,255,0) 0%, rgba(255,255,255,.85) 60%, #fff 100%);}
+  .lang{position:fixed;top:18px;right:20px;z-index:5;display:flex;gap:2px;
+    border:1px solid var(--line2);border-radius:7px;overflow:hidden;background:#fff;}
+  .lang button{border:0;background:transparent;color:var(--ink3);padding:6px 11px;cursor:pointer;font-family:var(--mono);font-size:12px;}
+  .lang button.on{background:var(--ink);color:#fff;}
+
+  .card{position:relative;z-index:1;width:100%;max-width:560px;background:#fff;
+    border:1px solid var(--ink);border-radius:14px;padding:40px 38px 30px;
+    box-shadow:8px 8px 0 -1px rgba(10,10,10,.06);
+    animation:rise .5s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  .brand{display:inline-block;margin-bottom:18px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;}
+  h1{font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.1;}
+  .sub{color:var(--ink2);font-size:14.5px;margin-top:10px;line-height:1.5;}
+
+  .steps{display:flex;gap:0;margin:26px 0 24px;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .step{flex:1;padding:12px 12px;display:flex;flex-direction:column;gap:5px;}
+  .step+.step{border-left:1px solid var(--line);}
+  .step .n{font-family:var(--mono);font-size:11px;color:var(--ink3);letter-spacing:.05em;}
+  .step .t{font-size:12.5px;color:var(--ink);line-height:1.35;}
+
+  .field{border:1px solid var(--line2);border-radius:10px;padding:13px 16px;transition:border-color .15s,box-shadow .15s;}
+  .field:focus-within{border-color:var(--ink);box-shadow:0 0 0 3px rgba(10,10,10,.07);}
+  .field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--ink3);margin-bottom:5px;}
+  .field input{width:100%;border:0;outline:0;background:transparent;font-family:var(--sans);font-size:16px;color:var(--ink);}
+  .field input::placeholder{color:#b8b8b8}
+
+  .btn{width:100%;margin-top:16px;background:var(--ink);color:#fff;border:1px solid var(--ink);
+    border-radius:10px;padding:15px;font-family:var(--sans);font-weight:500;font-size:15px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:9px;transition:background .15s,color .15s;}
+  .btn:hover{background:#fff;color:var(--ink);}
+  .btn[disabled]{opacity:.55;cursor:not-allowed;background:var(--ink);color:#fff;}
+  .btn .arrow{font-family:var(--mono);}
+  .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .results{margin-top:24px}
+  .keybox{border:1px solid var(--ink);border-radius:10px;padding:18px;background:#fafafa;animation:rise .3s ease both;}
+  .klabel{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .klabel .l{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase;}
+  .badge{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:3px 8px;border:1px solid var(--ink);border-radius:5px;color:var(--ink);text-transform:uppercase;}
+  .keyrow{display:flex;align-items:stretch;gap:10px}
+  .keyval{flex:1;min-width:0;font-family:var(--mono);font-size:13.5px;color:var(--ink);background:#fff;
+    border:1px solid var(--line2);border-radius:8px;padding:11px 13px;word-break:break-all;line-height:1.4;}
+  .copy{flex:0 0 auto;border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:8px;
+    padding:0 16px;font-family:var(--mono);font-size:12px;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;}
+  .copy:hover{background:var(--ink);color:#fff;}
+  .copy.done{background:var(--ink);color:#fff;}
+  .hint{font-size:12px;color:var(--ink3);margin-top:13px;line-height:1.5;}
+  .msg{text-align:center;font-size:13.5px;padding:14px;color:var(--err);font-family:var(--sans);}
+
+  .foot{margin-top:24px;padding-top:18px;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink3);text-align:center;}
+
+  @media(max-width:520px){
+    .card{padding:32px 22px 26px}h1{font-size:25px}
+    .steps{flex-direction:column}.step+.step{border-left:0;border-top:1px solid var(--line)}
+    .keyrow{flex-direction:column}.copy{padding:11px}
+  }
 </style>
 </head>
 <body>
+  <div class="lang" role="group" aria-label="language">
+    <button id="zh" data-lang="zh">中</button>
+    <button id="en" data-lang="en">EN</button>
+  </div>
+
   <main class="card">
-    <h1>Get your API Key</h1>
-    <p class="sub">Enter your registered email to claim your trial key</p>
+    <a class="brand" href="https://z.ai" target="_blank" rel="noopener" aria-label="Z.AI">
+      <svg viewBox="0 0 502.5 170" role="img" aria-label="Z.AI" style="height:26px;width:auto;display:block;">
+        <defs>
+          <linearGradient id="zai1" gradientUnits="userSpaceOnUse" x1="53.18" y1="-2.91" x2="77.92" y2="206.68"><stop offset="0" stop-color="#495966"/><stop offset="1" stop-color="#000000"/></linearGradient>
+          <linearGradient id="zai2" gradientUnits="userSpaceOnUse" x1="89.12" y1="-7.15" x2="113.86" y2="202.44"><stop offset="0" stop-color="#495966"/><stop offset="1" stop-color="#000000"/></linearGradient>
+          <linearGradient id="zai3" gradientUnits="userSpaceOnUse" x1="125.06" y1="-11.40" x2="149.80" y2="198.19"><stop offset="0" stop-color="#495966"/><stop offset="1" stop-color="#000000"/></linearGradient>
+          <linearGradient id="zai4" gradientUnits="userSpaceOnUse" x1="219.84" y1="-22.59" x2="244.58" y2="187.00"><stop offset="0" stop-color="#495966"/><stop offset="1" stop-color="#000000"/></linearGradient>
+          <linearGradient id="zai5" gradientUnits="userSpaceOnUse" x1="337.85" y1="-36.52" x2="362.60" y2="173.07"><stop offset="0" stop-color="#495966"/><stop offset="1" stop-color="#000000"/></linearGradient>
+          <linearGradient id="zai6" gradientUnits="userSpaceOnUse" x1="472.48" y1="-52.41" x2="497.22" y2="157.18"><stop offset="0" stop-color="#495966"/><stop offset="1" stop-color="#000000"/></linearGradient>
+        </defs>
+        <path fill="url(#zai1)" d="M105,0L91,20c-2.2,3.2-5.8,5-9.7,5H5V0H105z"/>
+        <polygon fill="url(#zai2)" points="200,0 80,170 0,170 120,0"/>
+        <path fill="url(#zai3)" d="M95,170l14.1-20c2.2-3.1,5.8-5,9.7-5H195v25H95z"/>
+        <path fill="url(#zai4)" d="M226,169.3v-30.8h29.4v30.8H226z"/>
+        <path fill="url(#zai5)" d="M444,169.3h-30l-14.6-36.7h-75.3l-14.4,36.7h-29.4L348.1,0.5h26L444,169.3z M389.7,107.8l-28.2-71.2l-27.8,71.2H389.7z"/>
+        <path fill="url(#zai6)" d="M474.8,169.3V0.5h27.7v168.8H474.8z"/>
+      </svg>
+    </a>
+    <h1 data-i18n="title">Get your API Key</h1>
+    <p class="sub" data-i18n="sub">Enter your registered email to claim your trial key</p>
 
     <div class="steps">
-      <div class="step"><span class="n">1</span><span class="t">输入报名邮箱<br>Enter your email</span></div>
-      <div class="step"><span class="n">2</span><span class="t">点击领取<br>Click to claim</span></div>
-      <div class="step"><span class="n">3</span><span class="t">复制并保存 Key<br>Copy &amp; save</span></div>
+      <div class="step"><span class="n">01</span><span class="t" data-i18n="s1">Enter your email</span></div>
+      <div class="step"><span class="n">02</span><span class="t" data-i18n="s2">Claim your key</span></div>
+      <div class="step"><span class="n">03</span><span class="t" data-i18n="s3">Copy &amp; save</span></div>
     </div>
 
     <form id="form" autocomplete="off">
       <div class="field">
-        <label for="email">Email</label>
+        <label for="email" data-i18n="emailLabel">EMAIL</label>
         <input id="email" type="email" placeholder="you@example.com" inputmode="email" required />
-        <span class="deco">A&#8801;</span>
       </div>
       <button class="btn" id="submit" type="submit">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <span id="btnText">领取 / Claim Key</span>
+        <span id="btnText" data-i18n="claim">Claim key</span><span class="arrow">&#8594;</span>
       </button>
     </form>
 
     <section class="results" id="results" hidden></section>
-    <p class="foot">输入报名邮箱即可领取 · One key per email</p>
+    <p class="foot" data-i18n="foot">One key per registered email</p>
   </main>
 
 <script>
-const form=document.getElementById('form');
-const results=document.getElementById('results');
-const btn=document.getElementById('submit');
-const btnText=document.getElementById('btnText');
+const I18N = {
+  en: {
+    htmlLang:'en', eyebrow:'API ACCESS', title:'Get your API Key',
+    sub:'Enter your registered email to claim your trial key',
+    s1:'Enter your email', s2:'Claim your key', s3:'Copy & save',
+    emailLabel:'EMAIL', claim:'Claim key', claiming:'Claiming', foot:'One key per registered email',
+    resultLabel:'Your API key', badgeNew:'New', badgeExisting:'Already claimed',
+    hint:'Save this key somewhere safe \u2014 only you can use it. The same email always returns the same key.',
+    copy:'Copy', copied:'Copied',
+    errEmpty:'Please enter your email',
+    errInvalid:'Invalid email format',
+    not_registered:"This email isn't on the registration list. Please use the email you registered with, or contact the organizer.",
+    pool_empty:'All keys have been claimed. Please contact the organizer.',
+    server_error:'Server error, please try again later.',
+    network:'Network error \u2014 please check your connection and retry.'
+  },
+  zh: {
+    htmlLang:'zh-CN', eyebrow:'API \u9886\u53d6', title:'\u9886\u53d6\u4f60\u7684 API Key',
+    sub:'\u8f93\u5165\u4f60\u62a5\u540d\u65f6\u586b\u5199\u7684\u90ae\u7bb1\uff0c\u9886\u53d6\u4e13\u5c5e\u8bd5\u7528 Key',
+    s1:'\u8f93\u5165\u62a5\u540d\u90ae\u7bb1', s2:'\u70b9\u51fb\u9886\u53d6', s3:'\u590d\u5236\u5e76\u4fdd\u5b58',
+    emailLabel:'\u90ae\u7bb1', claim:'\u9886\u53d6 Key', claiming:'\u5904\u7406\u4e2d', foot:'\u6bcf\u4e2a\u62a5\u540d\u90ae\u7bb1\u4ec5\u5bf9\u5e94\u4e00\u4e2a Key',
+    resultLabel:'\u4f60\u7684 API Key', badgeNew:'\u65b0\u9886\u53d6', badgeExisting:'\u5df2\u9886\u53d6',
+    hint:'\u8bf7\u59a5\u5584\u4fdd\u5b58\u4f60\u7684 Key\uff0c\u4ec5\u4f60\u672c\u4eba\u53ef\u7528\u3002\u540c\u4e00\u90ae\u7bb1\u518d\u6b21\u67e5\u8be2\u4f1a\u8fd4\u56de\u540c\u4e00\u4e2a Key\u3002',
+    copy:'\u590d\u5236', copied:'\u5df2\u590d\u5236',
+    errEmpty:'\u8bf7\u8f93\u5165\u90ae\u7bb1',
+    errInvalid:'\u90ae\u7bb1\u683c\u5f0f\u4e0d\u6b63\u786e',
+    not_registered:'\u8be5\u90ae\u7bb1\u4e0d\u5728\u62a5\u540d\u540d\u5355\u4e2d\uff0c\u8bf7\u786e\u8ba4\u4f7f\u7528\u62a5\u540d\u65f6\u586b\u5199\u7684\u90ae\u7bb1\uff0c\u6216\u8054\u7cfb\u7ba1\u7406\u5458\u3002',
+    pool_empty:'\u540d\u989d\u5df2\u53d1\u5b8c\uff0c\u8bf7\u8054\u7cfb\u7ba1\u7406\u5458\u3002',
+    server_error:'\u670d\u52a1\u5668\u51fa\u9519\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002',
+    network:'\u7f51\u7edc\u5f02\u5e38\uff0c\u8bf7\u68c0\u67e5\u8fde\u63a5\u540e\u91cd\u8bd5\u3002'
+  }
+};
+
+let lang = 'en';
+try { const saved = localStorage.getItem('lang'); if (saved) lang = saved; else if ((navigator.language||'').toLowerCase().startsWith('zh')) lang = 'zh'; } catch(e){}
+
+const $ = (id)=>document.getElementById(id);
+const form=$('form'), results=$('results'), btn=$('submit'), btnText=$('btnText');
+let lastResult = null;
+
+function t(k){ return (I18N[lang] && I18N[lang][k]) || I18N.en[k] || k; }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function applyLang(){
+  document.documentElement.lang = t('htmlLang');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.getAttribute('data-i18n')); });
+  $('zh').classList.toggle('on', lang==='zh');
+  $('en').classList.toggle('on', lang==='en');
+  if(lastResult) renderResult(lastResult);
+}
+document.querySelectorAll('.lang button').forEach(b=>{
+  b.onclick=()=>{ lang=b.dataset.lang; try{localStorage.setItem('lang',lang);}catch(e){} applyLang(); };
+});
 
 function loading(on){
   btn.disabled=on;
-  btnText.innerHTML = on ? '<span class="spin" style="display:inline-block;vertical-align:-2px"></span> 处理中…' : '领取 / Claim Key';
+  btnText.innerHTML = on ? '<span class="spin"></span> '+t('claiming')+'\u2026' : t('claim');
 }
-function showError(msg){
-  results.hidden=false;
-  results.innerHTML='<div class="empty">'+esc(msg)+'</div>';
-}
-function showKey(key,isNew){
-  results.hidden=false;
+function showMsg(text){ results.hidden=false; lastResult=null; results.innerHTML='<div class="msg">'+esc(text)+'</div>'; }
+function renderResult(r){
+  lastResult=r; results.hidden=false;
   results.innerHTML=
-    '<div class="acct"><div class="label">Your API Key'+
-    (isNew?'<span class="badge">新领取</span>':'<span class="badge">你已领取</span>')+'</div>'+
-    '<div class="keyrow"><span class="keyval">'+esc(key)+'</span>'+
-    '<button class="copy" data-key="'+encodeURIComponent(key)+'">复制 / Copy</button></div>'+
-    '<div class="hint">请妥善保存你的 Key。同一邮箱再次查询会返回同一个 Key。</div></div>';
+    '<div class="keybox"><div class="klabel"><span class="l">'+esc(t('resultLabel'))+'</span>'+
+    '<span class="badge">'+(r.status==='new'?esc(t('badgeNew')):esc(t('badgeExisting')))+'</span></div>'+
+    '<div class="keyrow"><span class="keyval">'+esc(r.key)+'</span>'+
+    '<button class="copy" data-key="'+encodeURIComponent(r.key)+'">'+esc(t('copy'))+'</button></div>'+
+    '<div class="hint">'+esc(t('hint'))+'</div></div>';
 }
 
-form.addEventListener('submit',async e=>{
+form.addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const email=document.getElementById('email').value.trim();
-  if(!email){showError('请输入邮箱');return;}
+  const email=$('email').value.trim();
+  if(!email){ showMsg(t('errEmpty')); return; }
   loading(true);
   try{
-    const r=await fetch('/api/claim',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email})
-    });
+    const r=await fetch('/api/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
     const data=await r.json();
     if(!r.ok){
-      showError(data.message || '领取失败，请稍后再试');
+      const code=data.error;
+      showMsg((I18N[lang] && I18N[lang][code]) || data.message || t('server_error'));
     }else{
-      showKey(data.key, data.status==='new');
+      renderResult({key:data.key, status:data.status});
     }
-  }catch(err){
-    showError('网络异常，请检查连接后重试');
-  }finally{
-    loading(false);
-  }
+  }catch(err){ showMsg(t('network')); }
+  finally{ loading(false); }
 });
 
-results.addEventListener('click',async e=>{
+results.addEventListener('click', async (e)=>{
   const b=e.target.closest('.copy'); if(!b) return;
   const text=decodeURIComponent(b.dataset.key);
   try{
-    if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);}
-    else{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';
-      ta.style.opacity='0';document.body.appendChild(ta);ta.select();
-      document.execCommand('copy');document.body.removeChild(ta);}
-    const old=b.textContent;b.textContent='已复制 ✓';b.classList.add('done');
-    setTimeout(()=>{b.textContent=old;b.classList.remove('done');},1600);
-  }catch(_){b.textContent='复制失败';}
+    if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(text); }
+    else{ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+    b.textContent=t('copied')+' \u2713'; b.classList.add('done');
+    setTimeout(()=>{ b.textContent=t('copy'); b.classList.remove('done'); },1600);
+  }catch(_){ b.textContent='\u00d7'; }
 });
+
+applyLang();
 </script>
 </body>
 </html>
