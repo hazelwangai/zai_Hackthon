@@ -41,14 +41,37 @@ export function maxPerKey() {
   return parseInt(process.env.MAX_PER_KEY || '10', 10);
 }
 
-// 管理员口令：默认 071926z.ai，可用环境变量 ADMIN_TOKEN 覆盖
-function adminToken() {
-  return process.env.ADMIN_TOKEN || '071926z.ai';
+// 管理员口令：
+//  - ADMIN_TOKEN：单个口令（向后兼容，默认 071926z.ai）
+//  - ADMIN_TOKENS：多个管理员，逗号分隔；每项可写 "名字:口令" 或只写 "口令"
+//    例：ADMIN_TOKENS="hazel:abc123,teammate:xyz789"
+function adminList() {
+  const out = [];
+  const single = process.env.ADMIN_TOKEN || (process.env.ADMIN_TOKENS ? '' : '071926z.ai');
+  if (single) out.push({ name: 'admin', token: single });
+  const multi = process.env.ADMIN_TOKENS || '';
+  for (const part of multi.split(',').map((x) => x.trim()).filter(Boolean)) {
+    const idx = part.indexOf(':');
+    if (idx > 0) out.push({ name: part.slice(0, idx).trim(), token: part.slice(idx + 1).trim() });
+    else out.push({ name: 'admin', token: part });
+  }
+  return out;
+}
+
+function ctEqual(a, b) {
+  const x = Buffer.from(String(a || '')), y = Buffer.from(String(b || ''));
+  if (x.length !== y.length) return false;
+  return crypto.timingSafeEqual(x, y);
+}
+
+// 校验口令，返回匹配到的管理员名字（不匹配返回 null）
+export function adminNameForToken(token) {
+  for (const a of adminList()) {
+    if (ctEqual(token, a.token)) return a.name;
+  }
+  return null;
 }
 
 export function checkAdmin(token) {
-  const expected = adminToken();
-  const a = Buffer.from(String(token || '')), b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
+  return adminNameForToken(token) !== null;
 }

@@ -84,7 +84,7 @@
 
   <div id="dash" class="hidden">
     <header class="bar">
-      <h1>API Key 管理后台</h1>
+      <h1>API Key 管理后台 <span id="whoami" style="font-size:13px;color:var(--muted);font-weight:400;"></span></h1>
       <button class="btn ghost sm" id="logout">退出登录</button>
     </header>
     <div class="alert" id="alert"></div>
@@ -93,7 +93,21 @@
       <div class="stat"><div class="k">已发满</div><div class="v" id="sFull">–</div></div>
       <div class="stat"><div class="k">已领取人数</div><div class="v" id="sClaimed">–</div></div>
       <div class="stat rem"><div class="k">剩余名额</div><div class="v" id="sRemain">–</div></div>
+      <div class="stat"><div class="k">报名人数</div><div class="v" id="sWl">–</div></div>
     </div>
+    <div class="panel">
+      <h2>报名名单（白名单） <span id="wlStatus" style="font-size:12px;font-weight:400;color:var(--muted);"></span></h2>
+      <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px;">只有名单内的邮箱能领取 Key。把报名邮箱粘进来（每行一个，或逗号分隔都行）。</p>
+      <textarea id="wlText" rows="5" placeholder="alice@example.com&#10;bob@example.com, carol@example.com&#10;…" style="width:100%;font-family:ui-monospace,Menlo,monospace;font-size:12px;border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical;"></textarea>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn" id="wlAddBtn">导入名单</button>
+        <button class="btn ghost sm" id="wlViewBtn">查看名单</button>
+        <button class="btn danger sm" id="wlClearBtn">清空名单</button>
+        <span class="err" id="wlMsg" style="margin:0;"></span>
+      </div>
+      <div id="wlList" class="hidden" style="margin-top:12px;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;"></div>
+    </div>
+
     <div class="panel">
       <h2>新增 API Key</h2>
       <div class="addrow">
@@ -102,6 +116,18 @@
         <button class="btn" id="addBtn">添加</button>
       </div>
       <div class="err" id="addErr"></div>
+      <div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" id="bulkToggle">
+          <span style="font-size:13px;color:var(--accent);font-weight:600;">▸ 批量导入（一次粘贴多行）</span>
+        </div>
+        <div id="bulkBox" class="hidden" style="margin-top:10px;">
+          <textarea id="bulkText" rows="6" placeholder="每行一个 Key；可选在 Key 后加逗号写来源邮箱，例如：&#10;abcd1234.xxxx, zai_test_045@mailinator.com&#10;（直接粘贴带序号的清单也行，会自动去掉序号）" style="width:100%;font-family:ui-monospace,Menlo,monospace;font-size:12px;border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical;"></textarea>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <button class="btn" id="bulkBtn">批量导入</button>
+            <span class="err" id="bulkMsg" style="margin:0;"></span>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="panel">
       <div class="toolbar">
@@ -143,22 +169,28 @@ $('loginBtn').onclick = async () => {
   const pwd = $('pwd').value; $('loginErr').textContent=''; $('loginBtn').disabled=true;
   try{
     const r = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})});
-    if(!r.ok){ $('loginErr').textContent='口令错误'; return; }
-    TOKEN = pwd; sessionStorage.setItem('adm', pwd); enterDash();
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok){ $('loginErr').textContent=(d&&d.message)||'口令错误'; return; }
+    TOKEN = pwd; sessionStorage.setItem('adm', pwd);
+    if(d&&d.name){ sessionStorage.setItem('admName', d.name); }
+    enterDash();
   }catch(e){ $('loginErr').textContent='登录失败，请重试'; }
   finally{ $('loginBtn').disabled=false; }
 };
 $('pwd').addEventListener('keydown',e=>{ if(e.key==='Enter') $('loginBtn').click(); });
-function logout(){ sessionStorage.removeItem('adm'); TOKEN=''; if(timer) clearInterval(timer);
+function logout(){ sessionStorage.removeItem('adm'); sessionStorage.removeItem('admName'); TOKEN=''; if(timer) clearInterval(timer);
   $('dash').classList.add('hidden'); $('login').classList.remove('hidden'); }
 $('logout').onclick = logout;
 function enterDash(){ $('login').classList.add('hidden'); $('dash').classList.remove('hidden');
+  const nm=sessionStorage.getItem('admName'); if(nm) $('whoami').textContent='· '+nm;
   load(); if(timer) clearInterval(timer); timer = setInterval(load, 4000); }
 
 function renderStats(s){
   $('sKeys').textContent=s.key_total; $('sFull').textContent=s.key_full;
   $('sClaimed').textContent=s.claimed; $('sRemain').textContent=s.remaining;
+  $('sWl').textContent=s.whitelist;
   $('capLbl').textContent=s.cap;
+  const ws=$('wlStatus'); if(ws){ ws.textContent = s.enforce ? '· 已启用（非名单邮箱不能领）' : '· 未启用（任何邮箱都能领）'; ws.style.color = s.enforce ? 'var(--ok)' : 'var(--err)'; }
   const a=$('alert'); a.className='alert';
   if(s.empty){ a.classList.add('empty'); a.textContent='⚠️ 名额已全部发完（剩余 0），请尽快补充 Key。'; }
   else if(s.low){ a.classList.add('low'); a.textContent='⚠️ 剩余名额仅 '+s.remaining+' 个（阈值 '+s.threshold+'），请准备补充。'; }
@@ -211,6 +243,70 @@ $('addBtn').onclick = async () => {
   }catch(e){ $('addErr').textContent='添加失败'; }
   finally{ $('addBtn').disabled=false; }
 };
+
+$('bulkToggle').onclick = () => {
+  const box=$('bulkBox'); box.classList.toggle('hidden');
+  $('bulkToggle').firstElementChild.textContent = (box.classList.contains('hidden')?'▸':'▾')+' 批量导入（一次粘贴多行）';
+};
+$('bulkBtn').onclick = async () => {
+  const text=$('bulkText').value.trim();
+  $('bulkMsg').style.color='var(--err)'; $('bulkMsg').textContent='';
+  if(!text){ $('bulkMsg').textContent='请先粘贴内容'; return; }
+  $('bulkBtn').disabled=true; $('bulkMsg').style.color='var(--muted)'; $('bulkMsg').textContent='导入中…';
+  try{
+    const r=await api('/api/admin/keys/bulk',{method:'POST',body:JSON.stringify({text})});
+    const d=await r.json();
+    if(!r.ok){ $('bulkMsg').style.color='var(--err)'; $('bulkMsg').textContent=d.message||'导入失败'; }
+    else{
+      $('bulkMsg').style.color='var(--ok)';
+      $('bulkMsg').textContent=`完成：新增 ${d.added}，已存在跳过 ${d.skipped}${d.invalid?('，无效 '+d.invalid):''}`;
+      $('bulkText').value=''; load();
+    }
+  }catch(e){ $('bulkMsg').style.color='var(--err)'; $('bulkMsg').textContent='导入失败'; }
+  finally{ $('bulkBtn').disabled=false; }
+};
+
+// ---- 报名名单 ----
+$('wlAddBtn').onclick = async () => {
+  const text=$('wlText').value.trim();
+  $('wlMsg').style.color='var(--err)'; $('wlMsg').textContent='';
+  if(!text){ $('wlMsg').textContent='请先粘贴邮箱'; return; }
+  $('wlAddBtn').disabled=true; $('wlMsg').style.color='var(--muted)'; $('wlMsg').textContent='导入中…';
+  try{
+    const r=await api('/api/admin/whitelist/bulk',{method:'POST',body:JSON.stringify({text})});
+    const d=await r.json();
+    if(!r.ok){ $('wlMsg').style.color='var(--err)'; $('wlMsg').textContent=d.message||'导入失败'; }
+    else{ $('wlMsg').style.color='var(--ok)';
+      $('wlMsg').textContent=`完成：新增 ${d.added}，已存在 ${d.skipped}${d.invalid?('，无效 '+d.invalid):''}`;
+      $('wlText').value=''; load(); if(!$('wlList').classList.contains('hidden')) loadWhitelist(); }
+  }catch(e){ $('wlMsg').style.color='var(--err)'; $('wlMsg').textContent='导入失败'; }
+  finally{ $('wlAddBtn').disabled=false; }
+};
+async function loadWhitelist(){
+  try{
+    const r=await api('/api/admin/whitelist'); const d=await r.json();
+    const box=$('wlList'); box.classList.remove('hidden');
+    if(!d.emails.length){ box.innerHTML='<div style="padding:14px;color:var(--muted);font-size:13px;">名单为空</div>'; return; }
+    let html='<table style="width:100%"><thead><tr><th>邮箱</th><th style="width:90px;">状态</th><th style="width:60px;"></th></tr></thead><tbody>';
+    for(const e of d.emails){
+      html+='<tr><td style="font-size:12.5px;">'+esc(e.email)+'</td>'+
+            '<td>'+(e.claimed?'<span class="pill full">已领取</span>':'<span class="pill open">未领取</span>')+'</td>'+
+            '<td><button class="btn danger sm" data-wl="'+encodeURIComponent(e.email)+'">删</button></td></tr>';
+    }
+    html+='</tbody></table>';
+    box.innerHTML=html;
+  }catch(e){}
+}
+$('wlViewBtn').onclick = loadWhitelist;
+$('wlClearBtn').onclick = async () => {
+  if(!confirm('确定清空整个报名名单？清空后所有邮箱都将无法领取（除非关闭白名单）。')) return;
+  await api('/api/admin/whitelist',{method:'DELETE'}); load(); loadWhitelist();
+};
+$('wlList').addEventListener('click', async (e)=>{
+  const b=e.target.closest('button[data-wl]'); if(!b) return;
+  if(!confirm('从名单移除该邮箱？')) return;
+  await api('/api/admin/whitelist/'+b.dataset.wl,{method:'DELETE'}); load(); loadWhitelist();
+});
 
 $('tbody').addEventListener('click', async (e)=>{
   const who=e.target.closest('.who');
