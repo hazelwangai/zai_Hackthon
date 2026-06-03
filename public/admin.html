@@ -14,8 +14,8 @@
     --sans:"Geist","Inter",system-ui,-apple-system,"Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
     --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:var(--sans);color:var(--ink);background:var(--bg);min-height:100vh;-webkit-font-smoothing:antialiased;
-    background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:22px 22px;}
+  body{font-family:var(--sans);color:#fff;background:#0d0d0d;min-height:100vh;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);background-size:22px 22px;}
   .wrap{max-width:1080px;margin:0 auto;padding:30px 22px 70px;position:relative;}
   /* login */
   .login{max-width:380px;margin:13vh auto 0;background:#fff;border:1px solid var(--ink);border-radius:14px;padding:34px;
@@ -31,29 +31,32 @@
   .btn:hover{background:#fff;color:var(--ink);}
   .btn[disabled]{opacity:.5;cursor:not-allowed;background:var(--ink);color:#fff;}
   .btn.sm{padding:6px 12px;font-size:12px;border-radius:7px;}
-  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line2);}
-  .btn.ghost:hover{border-color:var(--ink);background:#fff;color:var(--ink);}
+  .btn.ghost{background:transparent;color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.28);}
+  .btn.ghost:hover{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.5);}
+  header.bar .btn.ghost{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.25);}
+  header.bar .btn.ghost:hover{background:#fff;color:#0d0d0d;border-color:#fff;}
   .btn.danger{background:#fff;color:var(--err);border:1px solid #e6b8b4;}
   .btn.danger:hover{background:var(--err);color:#fff;border-color:var(--err);}
   .err{color:var(--err);font-size:13px;margin-top:10px;min-height:18px;}
   /* header */
   header.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
-  header.bar .left{display:flex;align-items:center;gap:14px;}
-  header.bar h1{font-size:18px;font-weight:600;letter-spacing:-.01em;}
+  header.bar .left{display:flex;align-items:center;gap:12px;}
+  header.bar h1{font-size:18px;font-weight:600;letter-spacing:-.01em;color:#fff;line-height:1;display:flex;align-items:center;gap:8px;}
   header.bar h1 span{font-family:var(--mono);}
-  .brand svg{height:22px;width:auto;display:block;}
+  .brand{display:inline-flex;align-items:center;}
+  .brand svg{height:20px;width:auto;display:block;}
   /* stats */
   .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
-  .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px;min-width:118px;}
+  .stat{background:#fff;border:1px solid #000;border-radius:10px;padding:14px 18px;min-width:118px;box-shadow:0 14px 36px -18px rgba(0,0,0,.7);}
   .stat .k{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase;}
   .stat .v{font-size:26px;font-weight:600;color:var(--ink);margin-top:3px;letter-spacing:-.02em;}
   .stat.rem .v{color:var(--ink);}
   /* alert */
   .alert{border-radius:10px;padding:11px 15px;font-size:13.5px;font-weight:500;margin-bottom:18px;display:none;border:1px solid;}
-  .alert.low{display:block;background:#fafafa;color:var(--ink);border-color:var(--ink);}
-  .alert.empty{display:block;background:#fff;color:var(--err);border-color:var(--err);}
+  .alert.low{display:block;background:#fff;color:var(--ink);border-color:#000;box-shadow:0 14px 36px -18px rgba(0,0,0,.7);}
+  .alert.empty{display:block;background:#fff;color:var(--err);border-color:var(--err);box-shadow:0 14px 36px -18px rgba(0,0,0,.7);}
   /* panel */
-  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:16px;}
+  .panel{background:#fff;border:1px solid #000;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 18px 48px -22px rgba(0,0,0,.7);}
   .panel h2{font-size:14px;font-weight:600;margin-bottom:12px;}
   .panel h2 span{font-family:var(--mono);font-weight:400;font-size:12px;}
   .addrow{display:flex;gap:10px;flex-wrap:wrap;}
@@ -85,6 +88,8 @@
   .hidden{display:none;}
   .who{font-family:var(--mono);font-size:11.5px;color:var(--ink2);cursor:pointer;text-decoration:underline dotted;}
   @media(max-width:640px){.tablewrap{overflow-x:auto}table{min-width:720px}}
+.brand-on-dark svg path, .brand-on-dark svg polygon{fill:#ffffff !important;}
+  .brand-on-dark svg{opacity:.95;}
 </style>
 </head>
 <body>
@@ -100,10 +105,11 @@
 
   <div id="dash" class="hidden">
     <header class="bar">
-      <div class="left"><span class="brand"><svg viewBox="0 0 502.5 170" role="img" aria-label="Z.AI"><defs><linearGradient id="azai" gradientUnits="userSpaceOnUse" x1="53" y1="-3" x2="78" y2="207"><stop offset="0" stop-color="#495966"/><stop offset="1" stop-color="#000000"/></linearGradient></defs><path fill="url(#azai)" d="M105,0L91,20c-2.2,3.2-5.8,5-9.7,5H5V0H105z"/><polygon fill="url(#azai)" points="200,0 80,170 0,170 120,0"/><path fill="url(#azai)" d="M95,170l14.1-20c2.2-3.1,5.8-5,9.7-5H195v25H95z"/><path fill="url(#azai)" d="M226,169.3v-30.8h29.4v30.8H226z"/><path fill="url(#azai)" d="M444,169.3h-30l-14.6-36.7h-75.3l-14.4,36.7h-29.4L348.1,0.5h26L444,169.3z M389.7,107.8l-28.2-71.2l-27.8,71.2H389.7z"/><path fill="url(#azai)" d="M474.8,169.3V0.5h27.7v168.8H474.8z"/></svg></span><h1>API Key 管理后台 <span id="whoami" style="color:var(--ink3);font-weight:400;font-family:var(--mono);font-size:13px;"></span></h1></div>
+      <div class="left"><span class="brand brand-on-dark"><svg viewBox="0 0 502.5 170" role="img" aria-label="Z.AI"><defs><linearGradient id="azai" gradientUnits="userSpaceOnUse" x1="53" y1="-3" x2="78" y2="207"><stop offset="0" stop-color="#495966"/><stop offset="1" stop-color="#000000"/></linearGradient></defs><path fill="url(#azai)" d="M105,0L91,20c-2.2,3.2-5.8,5-9.7,5H5V0H105z"/><polygon fill="url(#azai)" points="200,0 80,170 0,170 120,0"/><path fill="url(#azai)" d="M95,170l14.1-20c2.2-3.1,5.8-5,9.7-5H195v25H95z"/><path fill="url(#azai)" d="M226,169.3v-30.8h29.4v30.8H226z"/><path fill="url(#azai)" d="M444,169.3h-30l-14.6-36.7h-75.3l-14.4,36.7h-29.4L348.1,0.5h26L444,169.3z M389.7,107.8l-28.2-71.2l-27.8,71.2H389.7z"/><path fill="url(#azai)" d="M474.8,169.3V0.5h27.7v168.8H474.8z"/></svg></span><h1>API Key 管理后台 <span id="whoami" style="color:rgba(255,255,255,.55);font-weight:400;font-family:var(--mono);font-size:13px;"></span></h1></div>
       <button class="btn ghost sm" id="logout">退出登录</button>
     </header>
     <div class="alert" id="alert"></div>
+    <div class="alert" id="capAlert"></div>
     <div class="stats">
       <div class="stat"><div class="k">Key 总数</div><div class="v" id="sKeys">–</div></div>
       <div class="stat"><div class="k">已发满</div><div class="v" id="sFull">–</div></div>
@@ -121,7 +127,24 @@
         <button class="btn danger sm" id="wlClearBtn">清空名单</button>
         <span class="err" id="wlMsg" style="margin:0;"></span>
       </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap;">
+        <span style="font-size:12.5px;color:var(--ink3);font-family:var(--mono);">单个补加：</span>
+        <input id="wlOne" placeholder="someone@example.com" style="flex:1;min-width:200px;" />
+        <button class="btn sm" id="wlOneBtn">补加</button>
+        <span class="err" id="wlOneMsg" style="margin:0;"></span>
+      </div>
       <div id="wlList" class="hidden" style="margin-top:12px;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>选手 Key 处理 <span>· 查领取 / 换 / 退</span></h2>
+      <p style="font-size:12.5px;color:var(--ink3);margin:-4px 0 12px;">选手 Key 失效要换、或误领要退时用。换=旧名额作废发新的；退=放回名额可重领。</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="lookupEmail" placeholder="选手邮箱" style="flex:1;min-width:220px;" />
+        <button class="btn" id="lookupBtn">查询</button>
+      </div>
+      <div id="lookupResult" class="hidden" style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:14px;"></div>
+      <div class="err" id="lookupMsg" style="margin-top:8px;"></div>
     </div>
 
     <div class="panel">
@@ -201,12 +224,16 @@ function enterDash(){ $('login').classList.add('hidden'); $('dash').classList.re
   const nm=sessionStorage.getItem('admName'); if(nm) $('whoami').textContent='· '+nm;
   load(); if(timer) clearInterval(timer); timer = setInterval(load, 4000); }
 
-function renderStats(s){
+let CAPVAL=10;
+function renderStats(s){ CAPVAL=s.cap;
   $('sKeys').textContent=s.key_total; $('sFull').textContent=s.key_full;
   $('sClaimed').textContent=s.claimed; $('sRemain').textContent=s.remaining;
   $('sWl').textContent=s.whitelist;
   $('capLbl').textContent=s.cap;
   const ws=$('wlStatus'); if(ws){ ws.textContent = s.enforce ? '· 已启用（非名单邮箱不能领）' : '· 未启用（任何邮箱都能领）'; ws.style.color = s.enforce ? 'var(--ok)' : 'var(--err)'; }
+  const ca=$('capAlert'); ca.className='alert';
+  if(s.over_capacity){ ca.classList.add('empty'); ca.textContent='⚠️ 报名人数（'+s.whitelist+'）已超过总容量，剩余名额 '+s.remaining+'，请补充 Key。'; }
+  else if(s.whitelist>0 && s.remaining>0 && s.whitelist>s.remaining){ ca.classList.add('low'); ca.textContent='提示：报名人数 '+s.whitelist+'，剩余名额 '+s.remaining+'，接近上限，留意补充。'; }
   const a=$('alert'); a.className='alert';
   if(s.empty){ a.classList.add('empty'); a.textContent='⚠️ 名额已全部发完（剩余 0），请尽快补充 Key。'; }
   else if(s.low){ a.classList.add('low'); a.textContent='⚠️ 剩余名额仅 '+s.remaining+' 个（阈值 '+s.threshold+'），请准备补充。'; }
@@ -298,6 +325,59 @@ $('wlAddBtn').onclick = async () => {
   }catch(e){ $('wlMsg').style.color='var(--err)'; $('wlMsg').textContent='导入失败'; }
   finally{ $('wlAddBtn').disabled=false; }
 };
+
+$('wlOneBtn').onclick = async () => {
+  const email=$('wlOne').value.trim(); $('wlOneMsg').style.color='var(--err)'; $('wlOneMsg').textContent='';
+  if(!email){ $('wlOneMsg').textContent='请输入邮箱'; return; }
+  $('wlOneBtn').disabled=true;
+  try{
+    const r=await api('/api/admin/whitelist',{method:'POST',body:JSON.stringify({email})});
+    const d=await r.json();
+    if(!r.ok){ $('wlOneMsg').textContent=d.message||'添加失败'; }
+    else{ $('wlOneMsg').style.color='var(--ok)'; $('wlOneMsg').textContent=d.added?'已加入名单':'该邮箱已在名单'; $('wlOne').value=''; load(); if(!$('wlList').classList.contains('hidden')) loadWhitelist(); }
+  }catch(e){ $('wlOneMsg').textContent='添加失败'; }
+  finally{ $('wlOneBtn').disabled=false; }
+};
+
+// ---- 查领取 / 换 / 退 ----
+async function doLookup(){
+  const email=$('lookupEmail').value.trim();
+  $('lookupMsg').textContent=''; $('lookupMsg').style.color='var(--err)';
+  const box=$('lookupResult');
+  if(!email){ $('lookupMsg').textContent='请输入邮箱'; return; }
+  try{
+    const r=await api('/api/admin/claim-lookup?email='+encodeURIComponent(email));
+    const d=await r.json();
+    box.classList.remove('hidden');
+    if(!d.found){ box.innerHTML='<span class="muted" style="font-size:13px;">该选手尚未领取（不在领取记录中）。</span>'; return; }
+    box.innerHTML =
+      '<div style="font-size:12.5px;color:var(--ink2);margin-bottom:8px;">'+esc(d.email)+' · Key #'+d.key_id+' · '+(d.is_full?'该Key已发满':('该Key '+d.claim_count+'/'+CAPVAL))+'</div>'+
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">'+
+        '<span class="keymono" style="font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;padding:8px 11px;word-break:break-all;">'+esc(d.api_key)+'</span>'+
+        '<button class="btn sm" data-act="swap" data-email="'+encodeURIComponent(d.email)+'">换一个</button>'+
+        '<button class="btn ghost sm" data-act="return" data-email="'+encodeURIComponent(d.email)+'">退回</button>'+
+      '</div>';
+  }catch(e){ $('lookupMsg').textContent='查询失败'; }
+}
+$('lookupBtn').onclick = doLookup;
+$('lookupEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') doLookup(); });
+$('lookupResult').addEventListener('click', async (e)=>{
+  const b=e.target.closest('button[data-act]'); if(!b) return;
+  const email=b.dataset.email, act=b.dataset.act;
+  if(act==='swap'){
+    if(!confirm('给该选手换一个新 Key？旧名额将作废（不再发给别人），并随机分配一个新 Key。')) return;
+    const r=await api('/api/admin/claim/swap',{method:'POST',body:JSON.stringify({email:decodeURIComponent(email)})});
+    const d=await r.json();
+    if(!r.ok){ $('lookupMsg').style.color='var(--err)'; $('lookupMsg').textContent=d.message||'换 Key 失败'; }
+    else{ $('lookupMsg').style.color='var(--ok)'; $('lookupMsg').textContent='已换新 Key：'+d.key; doLookup(); load(); }
+  }else if(act==='return'){
+    if(!confirm('退回该选手的领取？名额放回池子，该选手可重新领取。')) return;
+    const r=await api('/api/admin/claim/return',{method:'POST',body:JSON.stringify({email:decodeURIComponent(email)})});
+    const d=await r.json();
+    if(!r.ok){ $('lookupMsg').style.color='var(--err)'; $('lookupMsg').textContent=d.message||'退回失败'; }
+    else{ $('lookupMsg').style.color='var(--ok)'; $('lookupMsg').textContent='已退回，名额放回池子。'; doLookup(); load(); }
+  }
+});
 async function loadWhitelist(){
   try{
     const r=await api('/api/admin/whitelist'); const d=await r.json();

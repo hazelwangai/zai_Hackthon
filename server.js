@@ -35,9 +35,23 @@ function recordFail(ip) {
 }
 function clearFails(ip) { loginFails.delete(ip); }
 
+// 领取接口限流：同一 IP 在窗口内最多 CLAIM_MAX 次
+const CLAIM_MAX = parseInt(process.env.CLAIM_MAX_PER_MIN || '20', 10);
+const CLAIM_WINDOW_MS = 60 * 1000;
+const claimHits = new Map(); // ip -> [timestamps]
+function claimRateLimited(ip) {
+  const now = Date.now();
+  const arr = (claimHits.get(ip) || []).filter((t) => now - t < CLAIM_WINDOW_MS);
+  arr.push(now);
+  claimHits.set(ip, arr);
+  return arr.length > CLAIM_MAX;
+}
+
 async function ensureSchema() {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   await pool.query(schema);
+  // 兼容旧表：缺列则补上
+  await pool.query('ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS void_count INTEGER NOT NULL DEFAULT 0');
 }
 
 // 统计：以「还能接新选手的容量」为口径
@@ -61,6 +75,8 @@ async function statsOf(client = pool) {
   s.threshold = threshold;
   s.low = s.remaining <= threshold && s.remaining > 0;
   s.empty = s.remaining === 0;
+  s.over_capacity = s.whitelist > s.remaining + s.claimed; // 报名人数 > 总容量
+  s.capacity_left_for_new = Math.max(0, s.remaining);
   return s;
 }
 
@@ -71,6 +87,12 @@ app.post('/api/claim', async (req, res) => {
 
   const cap = maxPerKey();
   const enforce = (process.env.WHITELIST_ENFORCED || 'true').toLowerCase() !== 'false';
+
+  // 限流：防脚本刷
+  const ip = clientIp(req);
+  if (claimRateLimited(ip)) {
+    return res.status(429).json({ error: 'rate_limited', message: '请求过于频繁，请稍后再试' });
+  }
 
   const client = await pool.connect();
   try {
@@ -83,6 +105,8 @@ app.post('/api/claim', async (req, res) => {
     }
 
     await client.query('BEGIN');
+    // 串行化分配过程，避免并发下「同时找不到半开 Key 而各开一个新 Key」
+    await client.query('SELECT pg_advisory_xact_lock(728192)');
 
     // 1) 这个选手已经领过 → 返回原来的 Key（不重复计数）
     const existing = await client.query(
@@ -94,14 +118,26 @@ app.post('/api/claim', async (req, res) => {
       return res.json({ key: decrypt(existing.rows[0].api_key_enc), status: 'existing' });
     }
 
-    // 2) 新选手 → 锁一个未满的 Key（claim_count < cap），优先填还差名额最少的，保证发满一个再开下一个
-    const pick = await client.query(
+    // 2) 新选手 → 分配一个 Key（方案2：随机开 Key，但尽量先填满已开的）
+    //    优先从「已开过(claim_count>0)且未满」里随机挑一个去填；
+    //    若没有这种，则从「全新未开(claim_count=0)」里随机开一个。
+    let pick = await client.query(
       `SELECT id, api_key_enc, claim_count FROM api_keys
-       WHERE claim_count < $1::int
-       ORDER BY claim_count DESC, id ASC
+       WHERE claim_count > 0 AND claim_count < $1::int
+       ORDER BY random()
        LIMIT 1 FOR UPDATE SKIP LOCKED`,
       [cap]
     );
+    if (pick.rowCount === 0) {
+      // 没有「已开未满」的 → 随机开一个全新的 Key
+      pick = await client.query(
+        `SELECT id, api_key_enc, claim_count FROM api_keys
+         WHERE claim_count = 0
+         ORDER BY random()
+         LIMIT 1 FOR UPDATE SKIP LOCKED`,
+        []
+      );
+    }
     if (pick.rowCount === 0) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'pool_empty', message: '名额已发完，请联系管理员' });
@@ -284,6 +320,16 @@ app.post('/api/admin/whitelist/bulk', requireAdmin, async (req, res) => {
   finally { client.release(); }
 });
 
+// 新增单个白名单邮箱（救急用）
+app.post('/api/admin/whitelist', requireAdmin, async (req, res) => {
+  const email = normEmail(req.body?.email);
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'invalid_email', message: '邮箱格式不正确' });
+  try {
+    const r = await pool.query('INSERT INTO whitelist (email) VALUES ($1) ON CONFLICT (email) DO NOTHING RETURNING email', [email]);
+    res.json({ ok: true, added: r.rowCount });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+
 // 删除单个白名单邮箱
 app.delete('/api/admin/whitelist/:email', requireAdmin, async (req, res) => {
   try {
@@ -297,6 +343,71 @@ app.delete('/api/admin/whitelist/:email', requireAdmin, async (req, res) => {
 app.delete('/api/admin/whitelist', requireAdmin, async (_req, res) => {
   try { await pool.query('DELETE FROM whitelist'); res.json({ ok: true }); }
   catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+
+/* ============ 按选手邮箱：查领取 / 换 / 退 ============ */
+// 查某选手当前领取
+app.get('/api/admin/claim-lookup', requireAdmin, async (req, res) => {
+  const email = normEmail(req.query.email);
+  if (!email) return res.status(400).json({ error: 'invalid' });
+  try {
+    const r = await pool.query(
+      `SELECT c.email, c.key_id, c.claimed_at, k.api_key_enc, k.claim_count, k.is_full
+       FROM claims c JOIN api_keys k ON k.id = c.key_id WHERE c.email = $1`, [email]);
+    if (r.rowCount === 0) return res.json({ found: false });
+    const row = r.rows[0];
+    res.json({ found: true, email: row.email, key_id: row.key_id, claimed_at: row.claimed_at,
+               api_key: decrypt(row.api_key_enc), claim_count: row.claim_count, is_full: row.is_full });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+
+// 换 Key：旧名额作废（claim_count 不减、void_count+1），重新随机分配一个新 Key
+app.post('/api/admin/claim/swap', requireAdmin, async (req, res) => {
+  const email = normEmail(req.body?.email);
+  if (!email) return res.status(400).json({ error: 'invalid' });
+  const cap = maxPerKey();
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(728192)');
+    const cur = await client.query('SELECT key_id FROM claims WHERE email = $1', [email]);
+    if (cur.rowCount === 0) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'not_claimed', message: '该选手尚未领取' }); }
+    const oldId = cur.rows[0].key_id;
+    // 作废旧名额：保留 claim_count（位置永久占用，不再发给别人），记 void_count
+    await client.query('UPDATE api_keys SET void_count = void_count + 1 WHERE id = $1', [oldId]);
+    await client.query('DELETE FROM claims WHERE email = $1', [email]);
+    // 重新分配（优先已开未满，否则随机开新）
+    let pick = await client.query(
+      `SELECT id, api_key_enc, claim_count FROM api_keys WHERE claim_count > 0 AND claim_count < $1::int ORDER BY random() LIMIT 1 FOR UPDATE SKIP LOCKED`, [cap]);
+    if (pick.rowCount === 0)
+      pick = await client.query(`SELECT id, api_key_enc, claim_count FROM api_keys WHERE claim_count = 0 ORDER BY random() LIMIT 1 FOR UPDATE SKIP LOCKED`, []);
+    if (pick.rowCount === 0) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'pool_empty', message: '没有可分配的新 Key' }); }
+    const k = pick.rows[0], nc = k.claim_count + 1;
+    await client.query('UPDATE api_keys SET claim_count = $1::int, is_full = ($1::int >= $2::int) WHERE id = $3::int', [nc, cap, k.id]);
+    await client.query('INSERT INTO claims (email, key_id) VALUES ($1, $2)', [email, k.id]);
+    await client.query('COMMIT');
+    res.json({ ok: true, key: decrypt(k.api_key_enc), key_id: k.id });
+  } catch (e) { await client.query('ROLLBACK').catch(()=>{}); console.error(e); res.status(500).json({ error: 'server_error' }); }
+  finally { client.release(); }
+});
+
+// 退回：删除该选手领取记录，旧 Key 计数 -1（名额放回池子）
+app.post('/api/admin/claim/return', requireAdmin, async (req, res) => {
+  const email = normEmail(req.body?.email);
+  if (!email) return res.status(400).json({ error: 'invalid' });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(728192)');
+    const cur = await client.query('SELECT key_id FROM claims WHERE email = $1', [email]);
+    if (cur.rowCount === 0) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'not_claimed', message: '该选手尚未领取' }); }
+    const oldId = cur.rows[0].key_id;
+    await client.query('DELETE FROM claims WHERE email = $1', [email]);
+    await client.query('UPDATE api_keys SET claim_count = GREATEST(claim_count - 1, 0), is_full = FALSE WHERE id = $1', [oldId]);
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) { await client.query('ROLLBACK').catch(()=>{}); console.error(e); res.status(500).json({ error: 'server_error' }); }
+  finally { client.release(); }
 });
 
 app.patch('/api/admin/keys/:id', requireAdmin, async (req, res) => {

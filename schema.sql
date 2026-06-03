@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
   source_email    TEXT,
   claim_count     INTEGER NOT NULL DEFAULT 0,
   is_full         BOOLEAN NOT NULL DEFAULT FALSE,
+  void_count      INTEGER NOT NULL DEFAULT 0,   -- 因「换Key」作废的名额数（仅记录/审计）
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
