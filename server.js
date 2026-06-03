@@ -97,7 +97,7 @@ app.post('/api/claim', async (req, res) => {
     // 2) 新选手 → 锁一个未满的 Key（claim_count < cap），优先填还差名额最少的，保证发满一个再开下一个
     const pick = await client.query(
       `SELECT id, api_key_enc, claim_count FROM api_keys
-       WHERE claim_count < $1
+       WHERE claim_count < $1::int
        ORDER BY claim_count DESC, id ASC
        LIMIT 1 FOR UPDATE SKIP LOCKED`,
       [cap]
@@ -110,7 +110,7 @@ app.post('/api/claim', async (req, res) => {
     const keyRow = pick.rows[0];
     const newCount = keyRow.claim_count + 1;
     await client.query(
-      `UPDATE api_keys SET claim_count = $1, is_full = ($1 >= $2) WHERE id = $3`,
+      `UPDATE api_keys SET claim_count = $1::int, is_full = ($1::int >= $2::int) WHERE id = $3::int`,
       [newCount, cap, keyRow.id]
     );
     await client.query(
