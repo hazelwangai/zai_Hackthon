@@ -4,3 +4,7 @@ node_modules/
 # 默认不提交真实 Key（保护明文）。若你的仓库是 Private 且想随代码一起部署 Key，
 # 把下面这一行删掉即可让 keys.json 进入版本库。
 keys.json
+
+# 内部文档（给 Claude Code 的任务说明 / 部署备注），不入库
+APPLY_CHANGES.md
+DEPLOY_FOR_CLAUDE_CODE.md
