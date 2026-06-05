@@ -55,6 +55,16 @@ async function ensureSchema() {
   await pool.query(schema);
   // 兼容旧表：缺列则补上
   await pool.query('ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS void_count INTEGER NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id TEXT');
+  await pool.query(`CREATE TABLE IF NOT EXISTS pinned_assignments (
+    email TEXT PRIMARY KEY, api_key TEXT NOT NULL, note TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS account_concurrency (
+    source_email TEXT PRIMARY KEY, concurrent BOOLEAN NOT NULL DEFAULT FALSE, updated_at TIMESTAMPTZ DEFAULT NOW())`);
+  // 预置固定绑定：test@gmail.com 永远返回指定 Key（保留历史记录）
+  await pool.query(
+    `INSERT INTO pinned_assignments (email, api_key, note) VALUES ($1,$2,$3) ON CONFLICT (email) DO NOTHING`,
+    ['test@gmail.com', 'c10ccfa7fbe84bff8b321decdb4c1768.w2N5ihodhBMPFPqb', 'history record']
+  );
 }
 
 // 统计：以「还能接新选手的容量」为口径
@@ -111,6 +121,15 @@ app.post('/api/claim', async (req, res) => {
     // 串行化分配过程，避免并发下「同时找不到半开 Key 而各开一个新 Key」
     await client.query('SELECT pg_advisory_xact_lock(728192)');
 
+    // 0) 固定预绑定：命中则直接返回指定 Key（不占计数、不走自动分配）
+    {
+      const pin = await client.query('SELECT api_key FROM pinned_assignments WHERE email = $1', [email]);
+      if (pin.rowCount > 0) {
+        await client.query('COMMIT');
+        return res.json({ key: pin.rows[0].api_key, status: 'pinned' });
+      }
+    }
+
     // 1) 这个选手已经领过 → 返回原来的 Key（不重复计数）
     const existing = await client.query(
       `SELECT k.api_key_enc FROM claims c JOIN api_keys k ON k.id = c.key_id WHERE c.email = $1`,
@@ -121,26 +140,14 @@ app.post('/api/claim', async (req, res) => {
       return res.json({ key: decrypt(existing.rows[0].api_key_enc), status: 'existing' });
     }
 
-    // 2) 新选手 → 分配一个 Key（方案2：随机开 Key，但尽量先填满已开的）
-    //    优先从「已开过(claim_count>0)且未满」里随机挑一个去填；
-    //    若没有这种，则从「全新未开(claim_count=0)」里随机开一个。
-    let pick = await client.query(
+    // 2) 新选手 → 按 Key 编号顺序分配：填满 #1 再 #2…（不随机）
+    const pick = await client.query(
       `SELECT id, api_key_enc, claim_count FROM api_keys
-       WHERE claim_count > 0 AND claim_count < $1::int
-       ORDER BY random()
+       WHERE claim_count < $1::int
+       ORDER BY claim_count DESC, id ASC
        LIMIT 1 FOR UPDATE SKIP LOCKED`,
       [cap]
     );
-    if (pick.rowCount === 0) {
-      // 没有「已开未满」的 → 随机开一个全新的 Key
-      pick = await client.query(
-        `SELECT id, api_key_enc, claim_count FROM api_keys
-         WHERE claim_count = 0
-         ORDER BY random()
-         LIMIT 1 FOR UPDATE SKIP LOCKED`,
-        []
-      );
-    }
     if (pick.rowCount === 0) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'pool_empty', message: '名额已发完，请联系管理员' });
@@ -218,18 +225,23 @@ app.get('/api/admin/keys', requireAdmin, async (req, res) => {
     if (filter === 'full') where = 'WHERE is_full';
     else if (filter === 'open') where = 'WHERE NOT is_full';
     const r = await pool.query(
-      `SELECT k.id, k.api_key_enc, k.source_email, k.claim_count, k.is_full,
+      `SELECT k.id, k.api_key_enc, k.source_email, k.user_id, k.claim_count, k.is_full,
+              COALESCE(ac.concurrent, FALSE) AS concurrent,
               COALESCE(json_agg(json_build_object('email', c.email, 'at', c.claimed_at)
                        ORDER BY c.claimed_at) FILTER (WHERE c.email IS NOT NULL), '[]') AS claimers
-       FROM api_keys k LEFT JOIN claims c ON c.key_id = k.id
+       FROM api_keys k
+       LEFT JOIN claims c ON c.key_id = k.id
+       LEFT JOIN account_concurrency ac ON ac.source_email = k.source_email
        ${where}
-       GROUP BY k.id ORDER BY k.id`
+       GROUP BY k.id, ac.concurrent ORDER BY k.id`
     );
     const cap = maxPerKey();
     const keys = r.rows.map((row) => ({
       id: row.id,
       api_key: decrypt(row.api_key_enc),
       source_email: row.source_email,
+      user_id: row.user_id,
+      concurrent: row.concurrent,
       claim_count: row.claim_count,
       cap,
       is_full: row.is_full,
@@ -348,6 +360,59 @@ app.delete('/api/admin/whitelist', requireAdmin, async (_req, res) => {
   catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
 });
 
+/* ============ 设置某个 Key 的 USER ID ============ */
+app.post('/api/admin/keys/:id/userid', requireAdmin, async (req, res) => {
+  try {
+    const r = await pool.query('UPDATE api_keys SET user_id = $1 WHERE id = $2 RETURNING id',
+      [String(req.body?.user_id || '').trim() || null, parseInt(req.params.id, 10)]);
+    if (r.rowCount === 0) return res.status(404).json({ error: 'not_found' });
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+
+/* ============ 测试账号并发标记（手动、仅展示） ============ */
+app.get('/api/admin/accounts', requireAdmin, async (_req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT k.source_email, COUNT(*)::int AS key_count, COALESCE(ac.concurrent, FALSE) AS concurrent
+       FROM api_keys k LEFT JOIN account_concurrency ac ON ac.source_email = k.source_email
+       WHERE k.source_email IS NOT NULL
+       GROUP BY k.source_email, ac.concurrent ORDER BY k.source_email`);
+    res.json({ accounts: r.rows });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+app.post('/api/admin/accounts/concurrency', requireAdmin, async (req, res) => {
+  const email = normEmail(req.body?.source_email); const on = !!req.body?.concurrent;
+  if (!email) return res.status(400).json({ error: 'invalid' });
+  try {
+    await pool.query(
+      `INSERT INTO account_concurrency (source_email, concurrent, updated_at) VALUES ($1,$2,NOW())
+       ON CONFLICT (source_email) DO UPDATE SET concurrent = EXCLUDED.concurrent, updated_at = NOW()`, [email, on]);
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+
+/* ============ 固定预绑定 pinned ============ */
+app.get('/api/admin/pinned', requireAdmin, async (_req, res) => {
+  try { const r = await pool.query('SELECT email, api_key, note, created_at FROM pinned_assignments ORDER BY created_at'); res.json({ items: r.rows }); }
+  catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+app.post('/api/admin/pinned', requireAdmin, async (req, res) => {
+  const email = normEmail(req.body?.email); const api_key = String(req.body?.api_key || '').trim();
+  if (!EMAIL_RE.test(email) || !api_key) return res.status(400).json({ error: 'invalid', message: '邮箱或 Key 不合法' });
+  try {
+    await pool.query(`INSERT INTO pinned_assignments (email, api_key, note) VALUES ($1,$2,$3)
+                      ON CONFLICT (email) DO UPDATE SET api_key = EXCLUDED.api_key, note = EXCLUDED.note`,
+                     [email, api_key, String(req.body?.note || '').trim() || null]);
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+app.delete('/api/admin/pinned/:email', requireAdmin, async (req, res) => {
+  try { const r = await pool.query('DELETE FROM pinned_assignments WHERE email = $1', [normEmail(req.params.email)]);
+    if (r.rowCount === 0) return res.status(404).json({ error: 'not_found' }); res.json({ ok: true }); }
+  catch (e) { console.error(e); res.status(500).json({ error: 'server_error' }); }
+});
+
 /* ============ 按选手邮箱：查领取 / 换 / 退 ============ */
 // 查某选手当前领取
 app.get('/api/admin/claim-lookup', requireAdmin, async (req, res) => {
@@ -380,10 +445,8 @@ app.post('/api/admin/claim/swap', requireAdmin, async (req, res) => {
     await client.query('UPDATE api_keys SET void_count = void_count + 1 WHERE id = $1', [oldId]);
     await client.query('DELETE FROM claims WHERE email = $1', [email]);
     // 重新分配（优先已开未满，否则随机开新）
-    let pick = await client.query(
-      `SELECT id, api_key_enc, claim_count FROM api_keys WHERE claim_count > 0 AND claim_count < $1::int ORDER BY random() LIMIT 1 FOR UPDATE SKIP LOCKED`, [cap]);
-    if (pick.rowCount === 0)
-      pick = await client.query(`SELECT id, api_key_enc, claim_count FROM api_keys WHERE claim_count = 0 ORDER BY random() LIMIT 1 FOR UPDATE SKIP LOCKED`, []);
+    const pick = await client.query(
+      `SELECT id, api_key_enc, claim_count FROM api_keys WHERE claim_count < $1::int ORDER BY claim_count DESC, id ASC LIMIT 1 FOR UPDATE SKIP LOCKED`, [cap]);
     if (pick.rowCount === 0) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'pool_empty', message: '没有可分配的新 Key' }); }
     const k = pick.rows[0], nc = k.claim_count + 1;
     await client.query('UPDATE api_keys SET claim_count = $1::int, is_full = ($1::int >= $2::int) WHERE id = $3::int', [nc, cap, k.id]);

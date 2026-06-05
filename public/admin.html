@@ -133,6 +133,25 @@
     </div>
 
     <div class="panel">
+      <h2>测试账号并发标记 <span>· 手动标记，仅展示不影响发放</span></h2>
+      <p style="font-size:12.5px;color:var(--ink3);margin:-4px 0 10px;">每个测试账号（来源邮箱）可标「已开并发/未开并发」。其名下所有 API Key 会显示该状态。</p>
+      <div id="acctList" style="font-size:13px;">加载中…</div>
+    </div>
+
+    <div class="panel">
+      <h2>固定预绑定 <span>· 指定邮箱永远拿指定 Key</span></h2>
+      <p style="font-size:12.5px;color:var(--ink3);margin:-4px 0 12px;">命中的邮箱直接返回指定 Key，不走自动分配、不占名额。</p>
+      <div class="addrow">
+        <input id="pinEmail" placeholder="邮箱" />
+        <input id="pinKey" placeholder="指定的 API Key" />
+        <input id="pinNote" placeholder="备注（选填）" style="max-width:160px;" />
+        <button class="btn" id="pinAddBtn">添加/更新</button>
+      </div>
+      <div class="err" id="pinMsg"></div>
+      <div id="pinList" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="panel">
       <h2>选手 Key 处理 <span>· 查领取 / 换 / 退</span></h2>
       <p style="font-size:12.5px;color:var(--ink3);margin:-4px 0 12px;">选手 Key 失效要换、或误领要退时用。换=旧名额作废发新的；退=放回名额可重领。</p>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -179,7 +198,7 @@
       <div class="tablewrap">
         <table>
           <thead><tr>
-            <th>#</th><th>API Key</th><th>来源 Zai 邮箱</th><th>发放进度</th><th>状态</th><th>领取选手</th><th>操作</th>
+            <th>#</th><th>API Key</th><th>来源 Zai 邮箱</th><th>并发</th><th>USER ID</th><th>发放进度</th><th>状态</th><th>领取选手</th><th>操作</th>
           </tr></thead>
           <tbody id="tbody"></tbody>
         </table>
@@ -218,7 +237,7 @@ function logout(){ sessionStorage.removeItem('adm'); sessionStorage.removeItem('
 $('logout').onclick = logout;
 function enterDash(){ $('login').classList.add('hidden'); $('dash').classList.remove('hidden');
   const nm=sessionStorage.getItem('admName'); if(nm) $('whoami').textContent='· '+nm;
-  load(); if(timer) clearInterval(timer); timer = setInterval(load, 4000); }
+  load(); loadAccounts(); loadPinned(); if(timer) clearInterval(timer); timer = setInterval(load, 4000); }
 
 let CAPVAL=10;
 function renderStats(s){ CAPVAL=s.cap;
@@ -247,12 +266,15 @@ function renderTable(keys){
       '<td>'+k.id+'</td>'+
       '<td class="key">'+esc(k.api_key)+'</td>'+
       '<td>'+(k.source_email?esc(k.source_email):'<span class="muted">—</span>')+'</td>'+
+      '<td>'+(k.concurrent?'<span class="pill" style="border-color:#16a34a;color:#16a34a;">●并发</span>':'<span class="pill" style="border-color:var(--line2);color:var(--ink3);">○</span>')+'</td>'+
+      '<td class="mono" style="font-family:var(--mono);font-size:12px;">'+(k.user_id?esc(k.user_id):'<span class="muted">—</span>')+'</td>'+
       '<td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill'+(k.is_full?' done':'')+'" style="width:'+pct+'%"></div></div>'+
         '<span class="cnt">'+k.claim_count+'/'+k.cap+'</span></div></td>'+
       '<td><span class="pill '+k.status+'">'+(k.is_full?'已发满':'可领取')+'</span></td>'+
       '<td>'+(k.claim_count>0?'<span class="who" title="'+esc(names)+'">'+k.claim_count+' 人 ▾</span>':'<span class="muted">—</span>')+'</td>'+
       '<td><div class="acts">'+
         '<button class="btn ghost sm" data-act="edit" data-id="'+k.id+'">改</button>'+
+        '<button class="btn ghost sm" data-act="uid" data-id="'+k.id+'" data-uid="'+(k.user_id?encodeURIComponent(k.user_id):'')+'">UID</button>'+
         (k.claim_count>0?'<button class="btn ghost sm" data-act="reset" data-id="'+k.id+'">重置</button>':'')+
         '<button class="btn danger sm" data-act="del" data-id="'+k.id+'">删</button>'+
       '</div></td>';
@@ -417,7 +439,65 @@ $('tbody').addEventListener('click', async (e)=>{
   }else if(act==='del'){
     if(!confirm('确定删除该 Key？其领取记录一并删除，不可恢复。')) return;
     await api('/api/admin/keys/'+id,{method:'DELETE'}); load();
+  }else if(act==='uid'){
+    const cur=btn.dataset.uid?decodeURIComponent(btn.dataset.uid):'';
+    const v=prompt('设置该 Key 的 USER ID（留空=清空）：', cur); if(v===null) return;
+    await api('/api/admin/keys/'+id+'/userid',{method:'POST',body:JSON.stringify({user_id:v.trim()})}); load();
   }
+});
+
+// ---- 测试账号并发标记 ----
+async function loadAccounts(){
+  try{
+    const d=await (await api('/api/admin/accounts')).json();
+    const box=$('acctList');
+    if(!d.accounts||!d.accounts.length){ box.innerHTML='<span class="muted">暂无账号（导入带来源邮箱的 Key 后显示）</span>'; return; }
+    let h='<table style="width:100%"><thead><tr><th>测试账号（来源邮箱）</th><th style="width:90px;">Key 数</th><th style="width:150px;">并发状态</th><th style="width:90px;"></th></tr></thead><tbody>';
+    for(const a of d.accounts){
+      h+='<tr><td style="font-size:12.5px;">'+esc(a.source_email)+'</td>'+
+         '<td class="mono" style="font-family:var(--mono);">'+a.key_count+'</td>'+
+         '<td>'+(a.concurrent?'<span class="pill" style="border-color:#16a34a;color:#16a34a;">已开并发</span>':'<span class="pill" style="border-color:var(--line2);color:var(--ink3);">未开并发</span>')+'</td>'+
+         '<td><button class="btn ghost sm" data-acct="'+encodeURIComponent(a.source_email)+'" data-on="'+(a.concurrent?'1':'0')+'">'+(a.concurrent?'关闭':'开启')+'</button></td></tr>';
+    }
+    h+='</tbody></table>'; box.innerHTML=h;
+  }catch(e){}
+}
+$('acctList').addEventListener('click', async (e)=>{
+  const b=e.target.closest('button[data-acct]'); if(!b) return;
+  const email=decodeURIComponent(b.dataset.acct), on=b.dataset.on==='1';
+  await api('/api/admin/accounts/concurrency',{method:'POST',body:JSON.stringify({source_email:email,concurrent:!on})});
+  loadAccounts(); load();
+});
+
+// ---- 固定预绑定 ----
+async function loadPinned(){
+  try{
+    const d=await (await api('/api/admin/pinned')).json();
+    const box=$('pinList');
+    if(!d.items||!d.items.length){ box.innerHTML='<span class="muted" style="font-size:12.5px;">暂无固定绑定</span>'; return; }
+    let h='<table style="width:100%"><thead><tr><th>邮箱</th><th>指定 Key</th><th>备注</th><th style="width:50px;"></th></tr></thead><tbody>';
+    for(const it of d.items){
+      h+='<tr><td style="font-size:12.5px;">'+esc(it.email)+'</td>'+
+         '<td class="mono" style="font-family:var(--mono);font-size:11.5px;word-break:break-all;">'+esc(it.api_key)+'</td>'+
+         '<td style="font-size:12px;color:var(--ink3);">'+(it.note?esc(it.note):'')+'</td>'+
+         '<td><button class="btn danger sm" data-pin="'+encodeURIComponent(it.email)+'">删</button></td></tr>';
+    }
+    h+='</tbody></table>'; box.innerHTML=h;
+  }catch(e){}
+}
+$('pinAddBtn').onclick = async () => {
+  const email=$('pinEmail').value.trim(), api_key=$('pinKey').value.trim(), note=$('pinNote').value.trim();
+  $('pinMsg').style.color='var(--err)'; $('pinMsg').textContent='';
+  if(!email||!api_key){ $('pinMsg').textContent='邮箱和 Key 都要填'; return; }
+  const r=await api('/api/admin/pinned',{method:'POST',body:JSON.stringify({email,api_key,note})});
+  const d=await r.json();
+  if(!r.ok){ $('pinMsg').textContent=d.message||'保存失败'; }
+  else{ $('pinMsg').style.color='var(--ok)'; $('pinMsg').textContent='已保存'; $('pinEmail').value='';$('pinKey').value='';$('pinNote').value=''; loadPinned(); }
+};
+$('pinList').addEventListener('click', async (e)=>{
+  const b=e.target.closest('button[data-pin]'); if(!b) return;
+  if(!confirm('删除该固定绑定？')) return;
+  await api('/api/admin/pinned/'+b.dataset.pin,{method:'DELETE'}); loadPinned();
 });
 
 if(TOKEN){ enterDash(); }

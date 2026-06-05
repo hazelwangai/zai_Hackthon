@@ -144,7 +144,7 @@ const I18N = {
     sub:'Enter your registered email to claim your trial key',
     s1:'Enter your email', s2:'Claim your key', s3:'Copy & save',
     emailLabel:'EMAIL', claim:'Claim key', claiming:'Claiming', foot:'One key per registered email',
-    resultLabel:'Your API key', badgeNew:'New', badgeExisting:'Already claimed',
+    resultLabel:'Your API key', badgeNew:'New', badgeExisting:'Already claimed', badgePinned:'Assigned',
     hint:'Save this key somewhere safe \u2014 only you can use it. The same email always returns the same key.',
     copy:'Copy', copied:'Copied',
     errEmpty:'Please enter your email',
@@ -159,7 +159,7 @@ const I18N = {
     sub:'\u8f93\u5165\u4f60\u62a5\u540d\u65f6\u586b\u5199\u7684\u90ae\u7bb1\uff0c\u9886\u53d6\u4e13\u5c5e\u8bd5\u7528 Key',
     s1:'\u8f93\u5165\u62a5\u540d\u90ae\u7bb1', s2:'\u70b9\u51fb\u9886\u53d6', s3:'\u590d\u5236\u5e76\u4fdd\u5b58',
     emailLabel:'\u90ae\u7bb1', claim:'\u9886\u53d6 Key', claiming:'\u5904\u7406\u4e2d', foot:'\u6bcf\u4e2a\u62a5\u540d\u90ae\u7bb1\u4ec5\u5bf9\u5e94\u4e00\u4e2a Key',
-    resultLabel:'\u4f60\u7684 API Key', badgeNew:'\u65b0\u9886\u53d6', badgeExisting:'\u5df2\u9886\u53d6',
+    resultLabel:'\u4f60\u7684 API Key', badgeNew:'\u65b0\u9886\u53d6', badgeExisting:'\u5df2\u9886\u53d6', badgePinned:'\u4e13\u5c5e',
     hint:'\u8bf7\u59a5\u5584\u4fdd\u5b58\u4f60\u7684 Key\uff0c\u4ec5\u4f60\u672c\u4eba\u53ef\u7528\u3002\u540c\u4e00\u90ae\u7bb1\u518d\u6b21\u67e5\u8be2\u4f1a\u8fd4\u56de\u540c\u4e00\u4e2a Key\u3002',
     copy:'\u590d\u5236', copied:'\u5df2\u590d\u5236',
     errEmpty:'\u8bf7\u8f93\u5165\u90ae\u7bb1',
@@ -201,7 +201,7 @@ function renderResult(r){
   lastResult=r; results.hidden=false;
   results.innerHTML=
     '<div class="keybox"><div class="klabel"><span class="l">'+esc(t('resultLabel'))+'</span>'+
-    '<span class="badge">'+(r.status==='new'?esc(t('badgeNew')):esc(t('badgeExisting')))+'</span></div>'+
+    '<span class="badge">'+(r.status==='new'?esc(t('badgeNew')):(r.status==='pinned'?esc(t('badgePinned')):esc(t('badgeExisting'))))+'</span></div>'+
     '<div class="keyrow"><span class="keyval">'+esc(r.key)+'</span>'+
     '<button class="copy" data-key="'+encodeURIComponent(r.key)+'">'+esc(t('copy'))+'</button></div>'+
     '<div class="hint">'+esc(t('hint'))+'</div></div>';
